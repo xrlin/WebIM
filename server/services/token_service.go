@@ -28,7 +28,7 @@ func (ts *TokenService) Generate(userId int, userName string) (string, error) {
 	return token.SignedString([]byte(ts.SignedKey))
 }
 
-func (ts *TokenService) Validate(tokenString string) (*UserClaims, error) {
+func (ts *TokenService) Parse(tokenString string) (*UserClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(ts.SignedKey), nil
 	})
