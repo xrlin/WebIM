@@ -15,3 +15,8 @@
 
 # ignore jetbrains' ide folder
 .idea/
+
+# ignore secret config
+/server/config/*
+!/server/config/*.go
+bash.exe.stackdump
