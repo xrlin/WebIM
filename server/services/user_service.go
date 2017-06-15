@@ -6,15 +6,15 @@ import (
 )
 
 /* Check if user info is valid with username and password */
-func ValidateUser(userName, password string) bool {
+func ValidateUser(userName, password string) (*models.User, bool) {
 	user := models.FindUserByName(userName)
 	if user == nil {
-		return false
+		return nil, false
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return false
+		return nil, false
 	}
-	return true
+	return user, true
 }
 
 /* Register and create a new user */
