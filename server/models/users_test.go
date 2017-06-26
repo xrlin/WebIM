@@ -1,10 +1,10 @@
 package models
 
 import (
-	"testing"
-	"time"
 	"fmt"
 	"github.com/xrlin/WebIM/server/database"
+	"testing"
+	"time"
 )
 
 func TestFindUserByName(t *testing.T) {

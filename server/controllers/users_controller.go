@@ -23,7 +23,6 @@ type Register struct {
 func UserToken(c *gin.Context) {
 	var login Login
 	if err := c.BindJSON(&login); err != nil {
-		fmt.Println(login)
 		c.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
 		return
 	}
