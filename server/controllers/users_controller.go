@@ -28,8 +28,8 @@ func UserToken(c *gin.Context) {
 	}
 	if user, validated := services.ValidateUser(login.UserName, login.Password); validated {
 		// TODO config SignedKey
-		tokenSetvice := services.TokenService{time.Hour * 3, "test"}
-		token, err := tokenSetvice.Generate(int(user.ID), user.Name)
+		tokenService := services.TokenService{time.Hour * 3, "test"}
+		token, err := tokenService.Generate(int(user.ID), user.Name)
 		if err == nil {
 			c.JSON(http.StatusOK, gin.H{"token": token})
 		} else {
