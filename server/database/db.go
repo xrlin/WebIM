@@ -7,14 +7,14 @@ import (
 )
 
 var (
-	DBConnection *gorm.DB
-	DBErr        error
+	DBConn *gorm.DB
+	DBErr  error
 )
 
 func init() {
-	DBConnection, DBErr = gorm.Open(config.DatabaseCfg.Type, config.DatabaseCfg.DBInfoString())
+	DBConn, DBErr = gorm.Open(config.DatabaseCfg.Type, config.DatabaseCfg.DBInfoString())
 	if DBErr != nil {
 		panic(DBErr)
 	}
-	DBConnection.DB().SetMaxIdleConns(50)
+	DBConn.DB().SetMaxIdleConns(50)
 }

@@ -17,7 +17,7 @@ type User struct {
 
 func FindUserByName(name string) *User {
 	var user User
-	database.DBConnection.Where("name = ?", name).First(&user)
+	database.DBConn.Where("name = ?", name).First(&user)
 	// No record found
 	if user.ID == 0 {
 		return nil
@@ -27,7 +27,7 @@ func FindUserByName(name string) *User {
 
 /* Create user from a pointer to user, if successed update the pointer to the User struct with id and other fields form database*/
 func CreateUser(user *User) error {
-	if !database.DBConnection.NewRecord(user) {
+	if !database.DBConn.NewRecord(user) {
 		return errors.New(fmt.Sprintf("User with name %s has exist!", user.Name))
 	}
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
@@ -35,5 +35,5 @@ func CreateUser(user *User) error {
 		return err
 	}
 	user.PasswordHash = string(passwordHash)
-	return database.DBConnection.Create(user).Error
+	return database.DBConn.Create(user).Error
 }

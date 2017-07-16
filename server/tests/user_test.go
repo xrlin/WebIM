@@ -13,7 +13,7 @@ func TestFindUserByName(t *testing.T) {
 	if models.FindUserByName(u.Name) != nil {
 		t.Error(fmt.Sprintf("Usre %s found before created!", u.Name))
 	}
-	database.DBConnection.Create(&u)
+	database.DBConn.Create(&u)
 	if models.FindUserByName(u.Name) == nil {
 		t.Error(fmt.Sprintf("Usre %s not found after run created!", u.Name))
 	} else {
@@ -23,7 +23,7 @@ func TestFindUserByName(t *testing.T) {
 
 func TestCreateUser(t *testing.T) {
 	u := &models.User{Name: fmt.Sprintf("User%d", time.Now().Unix()), Password: "test"}
-	if err := models.CreateUser(u); err == nil && !database.DBConnection.NewRecord(u) {
+	if err := models.CreateUser(u); err == nil && !database.DBConn.NewRecord(u) {
 		t.Log(fmt.Sprintf("CreteUser with name %s and password %s successfully", u.Name, u.Password))
 	} else {
 		t.Error(fmt.Sprintf("CreteUser with name %s and password %s failed", u.Name, u.Password))

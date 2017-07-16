@@ -6,5 +6,5 @@ import (
 )
 
 func main() {
-	database.DBConnection.AutoMigrate(&models.User{})
+	database.DBConn.AutoMigrate(&models.User{})
 }
