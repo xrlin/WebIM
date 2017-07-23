@@ -1,13 +1,13 @@
 package tests
 
 import (
-	"testing"
-	"strings"
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/xrlin/WebIM/server/routes"
 	"net/http"
 	"net/http/httptest"
-	"github.com/xrlin/WebIM/server/routes"
-	"github.com/gin-gonic/gin"
-	"fmt"
+	"strings"
+	"testing"
 	"time"
 )
 
@@ -22,6 +22,20 @@ func TestGetUserTokenSuccess(t *testing.T) {
 	server.ServeHTTP(responseRecorder, request)
 
 	if responseRecorder.Code != http.StatusOK {
+		t.Log(responseRecorder.Code)
+		t.Error("Test failed")
+	}
+}
+
+func TestGetUserTokenFailed(t *testing.T) {
+	params := `{"user_name":"test", "password": "&*(#(#)))%_$"}`
+	payload := strings.NewReader(params)
+
+	request := httptest.NewRequest("POST", "/api/user/token", payload)
+	responseRecorder := httptest.NewRecorder()
+	server.ServeHTTP(responseRecorder, request)
+
+	if responseRecorder.Code == http.StatusOK {
 		t.Error("Test failed")
 	}
 }

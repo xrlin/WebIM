@@ -2,13 +2,13 @@ package controllers
 
 import (
 	"errors"
-	"strings"
-	"net/http"
-	"github.com/xrlin/WebIM/server/services"
-	"time"
 	"fmt"
-	"github.com/xrlin/WebIM/server/models"
 	"github.com/gin-gonic/gin"
+	"github.com/xrlin/WebIM/server/models"
+	"github.com/xrlin/WebIM/server/services"
+	"net/http"
+	"strings"
+	"time"
 )
 
 type Login struct {
@@ -21,12 +21,8 @@ type Register struct {
 }
 
 func UserToken(c *gin.Context) {
-	var login Login
-	if err := c.BindJSON(&login); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
-		return
-	}
-	if user, validated := services.ValidateUser(login.UserName, login.Password); validated {
+	if userObj, ok := c.Get("user"); ok {
+		user := userObj.(*models.User)
 		// TODO config SignedKey
 		tokenService := services.TokenService{time.Hour * 3, "test"}
 		token, err := tokenService.Generate(int(user.ID), user.Name)
@@ -36,7 +32,7 @@ func UserToken(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"errors": err.Error()})
 		}
 	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"errors": "Username or password is invalid!"})
+		c.JSON(http.StatusUnauthorized, gin.H{"errors": "User is nil"})
 	}
 }
 
