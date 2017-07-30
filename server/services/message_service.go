@@ -54,7 +54,6 @@ func SaveOfflineMessage(msg models.Message) {
 
 func MonitorAndDeliverMessages(hub *Hub) {
 	for {
-		log.Println(hub.Rooms)
 		message, err := BRPopMessage()
 		if err == nil {
 			hub.Messages <- message

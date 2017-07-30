@@ -1,12 +1,12 @@
 package services
 
 import (
-	"testing"
+	"fmt"
+	"github.com/xrlin/WebIM/server/database"
 	"github.com/xrlin/WebIM/server/models"
 	"math/rand"
-	"github.com/xrlin/WebIM/server/database"
 	"os"
-	"fmt"
+	"testing"
 	"time"
 )
 
@@ -34,6 +34,18 @@ func TestBRPopMessageSuccess(t *testing.T) {
 	}
 	if replyMsg.UUID != msg.UUID {
 		t.Errorf("Poped message incorrect. Expected %v but %v instead!", msg, replyMsg)
+	}
+}
+
+func TestMonitorAndDeliverMessages(t *testing.T) {
+	hub := NewHub()
+	msg := models.Message{UUID: fmt.Sprintf("%v-%v", time.Now().Unix(), 1), RoomId: rand.Int()}
+	PushMessage(msg)
+	go MonitorAndDeliverMessages(hub)
+	const waitDeliver = 3
+	time.Sleep(waitDeliver)
+	if len(hub.Messages) != 1 {
+		t.Error("Fail to monitor and deliver message to hub!")
 	}
 }
 

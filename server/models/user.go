@@ -3,16 +3,19 @@ package models
 import (
 	"errors"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"github.com/xrlin/WebIM/server/database"
 	"golang.org/x/crypto/bcrypt"
+	"time"
 )
 
 type User struct {
-	gorm.Model
-	Name         string `gorm:"not null;unique;primary_key"`
-	Password     string `gorm:"-"`
-	PasswordHash string `gorm:"not null"`
+	ID           uint `gorm:"primary_key"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	Name         string     `gorm:"not null;unique_index:idx_name_deleted_at;primary_key"`
+	DeletedAt    *time.Time `sql:"index" gorm:"unique_index:idx_name_deleted_at"`
+	Password     string     `gorm:"-"`
+	PasswordHash string     `gorm:"not null"`
 	// 用于查询离线消息
 	Messages []Message
 
@@ -28,6 +31,10 @@ func (u *User) UserRoomName() string {
 
 // Room names to specify the chat rooms shared with other users
 func (u *User) RoomNames() []string {
+	// Find rooms if haven't done before
+	if len(u.Rooms) == 0 {
+		database.DBConn.Model(u).Related(&u.Rooms, "Rooms")
+	}
 	roomNames := []string{}
 	for _, room := range u.Rooms {
 		roomName := fmt.Sprintf("room_%v", room.ID)
