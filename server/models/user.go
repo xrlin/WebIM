@@ -9,17 +9,17 @@ import (
 )
 
 type User struct {
-	ID           uint `gorm:"primary_key"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	Name         string     `gorm:"not null;unique_index:idx_name_deleted_at;primary_key"`
-	DeletedAt    *time.Time `sql:"index" gorm:"unique_index:idx_name_deleted_at"`
-	Password     string     `gorm:"-"`
-	PasswordHash string     `gorm:"not null"`
+	ID           uint       `gorm:"primary_key" json:"id"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	Name         string     `gorm:"not null;unique_index:idx_name_deleted_at;" json:"name"`
+	DeletedAt    *time.Time `sql:"index" gorm:"unique_index:idx_name_deleted_at" json:"deleted_at"`
+	Password     string     `gorm:"-" json:"-"`
+	PasswordHash string     `gorm:"not null" json:"-"`
 	// 用于查询离线消息
-	Messages []Message
+	Messages []Message `json:"-"`
 
-	Rooms []Room `gorm:"many2many:user_rooms"`
+	Rooms []Room `gorm:"many2many:user_rooms" json:"-"`
 }
 
 // Room name just for user itself

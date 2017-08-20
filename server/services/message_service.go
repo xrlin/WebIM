@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"github.com/xrlin/WebIM/server/database"
 	"github.com/xrlin/WebIM/server/models"
@@ -16,6 +17,7 @@ func closeConn(conn redis.Conn) {
 }
 
 func PushMessage(msg models.Message) error {
+	fmt.Println(fmt.Sprintf("Message push type %v", msg))
 	redisConn := database.RedisPool.Get()
 
 	defer closeConn(redisConn)

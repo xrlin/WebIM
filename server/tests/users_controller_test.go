@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var server *gin.Engine = routes.RouterEngin()
+var server *gin.Engine = routes.RouterEngine()
 
 func TestGetUserTokenSuccess(t *testing.T) {
 	params := `{"user_name":"test", "password": "test"}`

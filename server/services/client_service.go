@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/xrlin/WebIM/server/models"
 	"log"
@@ -48,12 +49,15 @@ func (client *Client) Read() {
 	for {
 		msg := new(models.Message)
 		err := client.conn.ReadJSON(msg)
+		log.Printf("message with room_id %v, will be sended to clident %v, user: %v", msg.RoomId, client, client.user.ID)
 		if err != nil {
+			log.Println(err)
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
 				log.Printf("error: %v", err)
 			}
 			break
 		}
+		fmt.Println("Received msg's type", msg.MsgType)
 		PushMessage(*msg)
 	}
 }
@@ -67,6 +71,7 @@ func (client *Client) Write() {
 	for {
 		select {
 		case msg, ok := <-client.send:
+			log.Printf("Message to client %#v", msg)
 			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				client.conn.WriteMessage(websocket.CloseMessage, []byte{})

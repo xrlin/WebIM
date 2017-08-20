@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/xrlin/WebIM/server/database"
 	"github.com/xrlin/WebIM/server/models"
 	"github.com/xrlin/WebIM/server/services"
 	"log"
@@ -11,9 +10,6 @@ import (
 var hub *services.Hub
 
 func Chat(c *gin.Context) {
-	u := &models.User{}
-	database.DBConn.First(u)
-	c.Set("user", u)
 	userObj, ok := c.Get("user")
 	if !ok {
 		log.Fatalln("No user exist in context(Chat controller).")

@@ -1,0 +1,137 @@
+.chat-box {
+  height: 100%;
+  overflow: hidden;
+  background-color: #eee;
+
+  .title-wrapper {
+    text-align: center;
+    position: relative;
+    height: 40px;
+
+    .info {
+      padding: 10px 0 8px 0;
+      margin: 0 18px;
+      border-bottom: 1px solid #d6d6d6;
+
+      .title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 10rem;
+        display: inline-block;
+        white-space: nowrap;
+        vertical-align: middle;
+      }
+
+      i {
+        margin-left: .2rem;
+        vertical-align: sub;
+      }
+    }
+  }
+
+  .messages-box {
+    height: 70%;
+    border-bottom: 1px solid #d6d6d6;
+  }
+
+  .chat-input-area {
+    height: 30%;
+    pre {
+      min-height: 100%;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      box-shadow: none !important;
+      &:focus, &:hover, &:active {
+        outline-color: transparent;
+      }
+    }
+    &:focus, &:hover, &:active {
+      outline-color: transparent;
+    }
+  }
+}
+
+.thumb-vertical {
+  background-color: #c3c3c3;
+  border-radius: 3px;
+}
+
+.members {
+  position: absolute;
+  -webkit-box-shadow: 1px 1px 1px #e0e0e0;
+  padding: 0 18px 10px 18px;
+  opacity: 0;
+  width: 100%;
+  background: #eeeeee;
+  z-index: 1;
+  visibility: hidden;
+  -webkit-transition: all 0.6s;
+  -moz-transition: all 0.6s;
+  transition: all 0.6s;
+
+  &.visible {
+    visibility: visible;
+    opacity: 1;
+    z-index: 2000;
+  }
+
+  .wrapper {
+    position: relative;
+    width: 100%;
+    max-height: 300px;
+    z-index: 1500;
+  }
+
+  .member-info {
+    float: left;
+    position: relative;
+    height: 85px;
+    margin-right: 7px;
+    margin-left: 7px;
+    padding-top: 10px;
+  }
+
+  .avatar {
+    display: inline-block;
+    > img {
+      display: block;
+      width: 55px;
+      height: 55px;
+      cursor: pointer;
+    }
+  }
+
+  .nickname {
+    color: #888;
+    width: 55px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-wrap: normal;
+    font-size: 12px;
+    vertical-align: middle;
+  }
+}
+
+.mask {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  z-index: 1400;
+  display: none;
+  &.visible {
+    display: block;
+    top: 0;
+    left: 0;
+  }
+}
+
+.input-area {
+  tab-index: 0;
+  white-space: pre-wrap; /* Since CSS 2.1 */
+  white-space: -moz-pre-wrap; /* Mozilla, since 1999 */
+  white-space: -o-pre-wrap; /* Opera 7 */
+  word-wrap: break-word; /* Internet Explorer 5.5+ */
+}
+

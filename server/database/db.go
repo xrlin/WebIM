@@ -28,6 +28,8 @@ func init() {
 		panic(DBErr)
 	}
 	DBConn.DB().SetMaxIdleConns(50)
+	DBConn.LogMode(false)
+	DBConn.BlockGlobalUpdate(true)
 
 	RedisPool = newRedisPool("localhost:6379")
 }
