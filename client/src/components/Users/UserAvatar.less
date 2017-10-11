@@ -1,0 +1,38 @@
+.avatar {
+  cursor: pointer;
+}
+
+.profile_mini {
+  background: white;
+  position: fixed;
+  display: none;
+  &.visible {
+    display: block;
+    z-index: 2500;
+  }
+
+  .profile_mini__header {
+    img {
+      width: 180px;
+      height: 180px;
+    }
+  }
+
+  .profile_mini__body {
+    padding: 20px;
+    min-height: 74px;
+  }
+}
+
+.mask {
+  position: fixed;
+  display: none;
+  &.visible {
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 2400;
+    top: 0;
+    left: 0;
+  }
+}

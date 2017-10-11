@@ -2,13 +2,12 @@ package controllers
 
 import (
 	"errors"
-	"strings"
-	"net/http"
-	"github.com/xrlin/WebIM/server/services"
-	"time"
 	"fmt"
-	"github.com/xrlin/WebIM/server/models"
 	"github.com/gin-gonic/gin"
+	"github.com/xrlin/WebIM/server/models"
+	"github.com/xrlin/WebIM/server/services"
+	"net/http"
+	"strings"
 )
 
 type Login struct {
@@ -21,22 +20,18 @@ type Register struct {
 }
 
 func UserToken(c *gin.Context) {
-	var login Login
-	if err := c.BindJSON(&login); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
-		return
-	}
-	if user, validated := services.ValidateUser(login.UserName, login.Password); validated {
+	if userObj, ok := c.Get("user"); ok {
+		user := userObj.(*models.User)
 		// TODO config SignedKey
-		tokenSetvice := services.TokenService{time.Hour * 3, "test"}
-		token, err := tokenSetvice.Generate(int(user.ID), user.Name)
+		tokenService := services.GetTokenService()
+		token, err := tokenService.Generate(int(user.ID), user.Name)
 		if err == nil {
 			c.JSON(http.StatusOK, gin.H{"token": token})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"errors": err.Error()})
 		}
 	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"errors": "Username or password is invalid!"})
+		c.JSON(http.StatusUnauthorized, gin.H{"errors": "User is nil"})
 	}
 }
 
@@ -51,6 +46,96 @@ func CreateUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("User %s created successfully.", user.Name)})
+	}
+}
+
+func GetUserInfo(c *gin.Context) {
+	userObj, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"errors": "No such user!"})
+		return
+	}
+	user := userObj.(*models.User)
+	c.JSON(http.StatusOK, user)
+}
+
+func GetRecentRooms(c *gin.Context) {
+	userObj, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"errors": "No such user!"})
+		return
+	}
+	user := userObj.(*models.User)
+	rooms := services.GetUserRecentRooms(user)
+	c.JSON(http.StatusOK, gin.H{"rooms": rooms})
+}
+
+func SearchUsers(c *gin.Context) {
+	name := c.Query("name")
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": "Must provide name."})
+		return
+	}
+	users := services.SearchUsersByName(name)
+	c.JSON(http.StatusOK, gin.H{"users": users})
+}
+
+type friendInfo struct {
+	FriendID uint `json:"friend_id" binding: "required"`
+}
+
+func AddFriend(c *gin.Context) {
+	userObj, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"errors": "No such user!"})
+		return
+	}
+	user := userObj.(*models.User)
+	friend := friendInfo{}
+	if err := c.BindJSON(&friend); err != nil || friend.FriendID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": "Must provide the user id of friend."})
+		return
+	}
+	_, room, err := services.AddFriend(hub, user, friend.FriendID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Add friend failed." + err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"room": *room})
+}
+
+func GetFriends(c *gin.Context) {
+	userObj, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"errors": "No such user!"})
+		return
+	}
+	user := userObj.(*models.User)
+	friends := services.GetUserFriends(*user)
+	c.JSON(http.StatusOK, gin.H{"friends": friends})
+}
+
+type addRoomParams struct {
+	UserIds []int `json:"user_ids" binding:"required"`
+}
+
+func CreateRoom(c *gin.Context) {
+	userObj, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"errors": "No such user!"})
+		return
+	}
+	var params addRoomParams
+	if err := c.BindJSON(&params); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
+		return
+	}
+	user := userObj.(*models.User)
+	if room, err := services.CreateRoom(hub, user, params.UserIds); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
+		return
+	} else {
+		c.JSON(http.StatusCreated, gin.H{"room": *room})
 	}
 }
 

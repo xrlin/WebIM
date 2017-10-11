@@ -1,0 +1,88 @@
+.message {
+  margin: 10px 16px;
+}
+
+.content {
+  overflow: hidden;
+}
+
+.bubble {
+  background: rgb(255, 255, 255);
+  max-width: 500px;
+  min-height: 1em;
+  display: inline-block;
+  vertical-align: top;
+  position: relative;
+  text-align: left;
+  font-size: 14px;
+  border-radius: 3px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  margin: 0 10px;
+
+  &::after, &::before {
+    position: absolute;
+    top: 14px;
+    border: 6px solid transparent;
+    content: " ";
+  }
+}
+
+.message:not(.me) .bubble::before {
+  right: 100%;
+  border-right-color: rgb(255, 255, 255);
+  border-right-width: 4px;
+}
+
+.bubble .bubble_content {
+  min-height: 25px;
+}
+
+pre {
+  padding: 9px 13px;
+}
+
+.plain {
+  display: inline-block;
+}
+
+.clearfix:after {
+  content: " ";
+  visibility: hidden;
+  display: block;
+  height: 0;
+  clear: both;
+}
+
+.me {
+  .content {
+    text-align: right;
+  }
+  .bubble {
+    background: #b2e281;
+  }
+  .bubble::after {
+    left: 100%;
+    border-left-color: #b2e281;
+    border-left-width: 4px;
+  }
+  .avatar {
+    float: right;
+  }
+}
+
+.avatar {
+  img {
+    width: 40px;
+    height: 40px;
+  }
+  border-radius: 2px;
+  -moz-border-radius: 2px;
+  -webkit-border-radius: 2px;
+  float: left;
+  cursor: pointer;
+}
+
+.message.me.avatar {
+  float: right;
+}

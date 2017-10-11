@@ -1,0 +1,54 @@
+.search {
+  :global(.ant-select-selection) {
+    @font-color: #fff;
+    background-color: #26292e;
+    color: @font-color;
+    line-height: 32px;
+    border-radius: 0;
+    border-color: gray;
+  }
+  :global(.ant-select-selection__placeholder) {
+    @placeholder-color: #d6d6d6;
+    color: @placeholder-color;
+  }
+  :global(.ant-select-focused) {
+    :global(.ant-select-selection) {
+      border-color: #c2c2c2;
+      outline: 0;
+      box-shadow: none;
+    }
+  }
+}
+
+.dropdown {
+  background-color: #393c43 !important;
+  :global(.ant-select-dropdown-menu-item-active) {
+    background-color: #919191 !important;
+  }
+  :global(.ant-select-dropdown-menu-root) {
+    max-height: 400px;
+  }
+  :global(.ant-select-dropdown-menu-item-group-title) {
+    color: #919191;
+    font-size: medium;
+  }
+}
+
+.avatar {
+  display: table-cell;
+  img {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+.nickname {
+  display: table-cell;
+  vertical-align: middle;
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: nowrap;
+  color: #eeeeee;
+  padding: 0 10px;
+  font-size: small;
+}

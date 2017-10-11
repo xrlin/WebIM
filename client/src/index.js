@@ -1,19 +1,36 @@
 import dva from 'dva';
+import {routerRedux} from "dva/router";
 import './index.css';
 
 // 1. Initialize
 const app = dva({
   onError(e, dispatch) {
-    e.response.json().then((data) => {
+    if (e.response) {
+      e.response.json().then((data) => {
+        if (e.response.status === 401) {
+          dispatch(routerRedux.push({pathname: '/login'}));
+          return
+        }
+        dispatch({
+          type: 'errors/add',
+          payload: data.errors
+        });
+      });
+    } else {
       dispatch({
         type: 'errors/add',
-        payload: data.errors
-      })
-    });
+        payload: e
+      });
+    }
+
   },
 });
 
 app.model(require("./models/users"));
+
+app.model(require("./models/chat_modal"));
+
+app.model(require("./models/search_modal"));
 
 app.model(require("./models/errors"));
 

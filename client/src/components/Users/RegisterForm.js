@@ -1,6 +1,8 @@
 import React from "react";
 import {Button, Form, Icon, Input} from "antd";
+import {Link} from 'dva/router';
 import styles from './RegisterForm.less';
+
 const FormItem = Form.Item;
 
 class RegisterForm extends React.Component {
@@ -43,7 +45,7 @@ class RegisterForm extends React.Component {
           <Button type="primary" htmlType="submit" className={styles['register-form-button']}>
             Register
           </Button>
-          Or <a href="">login now!</a>
+          Or <Link to="/login">login now!</Link>
         </FormItem>
       </Form>
     )

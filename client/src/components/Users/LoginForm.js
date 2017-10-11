@@ -1,6 +1,8 @@
 import {Button, Checkbox, Form, Icon, Input} from "antd";
 import React from "react";
+import {Link} from "dva/router";
 import styles from './LoginForm.less'
+
 const FormItem = Form.Item;
 
 class LoginForm extends React.Component {
@@ -49,7 +51,7 @@ class LoginForm extends React.Component {
           <Button type="primary" htmlType="submit" className={styles['login-form-button']}>
             Log in
           </Button>
-          Or <a href="">register now!</a>
+          Or <Link to="/register">register now!</Link>
         </FormItem>
       </Form>
     );

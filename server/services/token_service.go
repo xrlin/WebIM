@@ -7,14 +7,18 @@ import (
 
 type UserClaims struct {
 	UserName string `json:"userName"`
-	UserId int `json:"userId"`
+	UserId   int    `json:"userId"`
 	jwt.StandardClaims
 }
 
 type TokenService struct {
 	// token有效时长
-	Duration time.Duration
+	Duration  time.Duration
 	SignedKey string
+}
+
+func GetTokenService() TokenService {
+	return TokenService{time.Minute * 30, "test"}
 }
 
 func (ts *TokenService) Generate(userId int, userName string) (string, error) {
@@ -22,7 +26,7 @@ func (ts *TokenService) Generate(userId int, userName string) (string, error) {
 	claims := UserClaims{userName,
 		userId,
 		jwt.StandardClaims{
-			ExpiresAt:expiredAt,
+			ExpiresAt: expiredAt,
 		}}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(ts.SignedKey))

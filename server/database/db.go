@@ -1,20 +1,35 @@
 package database
 
 import (
+	"github.com/garyburd/redigo/redis"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/xrlin/WebIM/server/config"
+	"time"
 )
 
 var (
-	DBConnection *gorm.DB
-	DBErr        error
+	DBConn    *gorm.DB
+	DBErr     error
+	RedisPool *redis.Pool
 )
 
+func newRedisPool(addr string) *redis.Pool {
+	return &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 240 * time.Second,
+		Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", addr) },
+	}
+}
+
 func init() {
-	DBConnection, DBErr = gorm.Open(config.DatabaseCfg.Type, config.DatabaseCfg.DBInfoString())
+	DBConn, DBErr = gorm.Open(config.DatabaseCfg.Type, config.DatabaseCfg.DBInfoString())
 	if DBErr != nil {
 		panic(DBErr)
 	}
-	DBConnection.DB().SetMaxIdleConns(50)
+	DBConn.DB().SetMaxIdleConns(50)
+	DBConn.LogMode(false)
+	DBConn.BlockGlobalUpdate(true)
+
+	RedisPool = newRedisPool("localhost:6379")
 }
