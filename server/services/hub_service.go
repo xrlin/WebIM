@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"github.com/xrlin/WebIM/server/database"
 	"github.com/xrlin/WebIM/server/models"
 	"log"
 )
@@ -173,8 +174,25 @@ func (hub *Hub) deliver(message models.Message) {
 func (hub *Hub) deliverMsgToRoom(room string, message models.Message) {
 	log.Println("Deleiver message to room: ", room)
 	log.Println("Now the room has clients", hub.Rooms[room])
+	sendUsers := make(map[uint]bool)
+
+	var users []models.User
+	var r models.Room
+	database.DBConn.Where("id = ?", message.RoomId).Find(&r)
+	database.DBConn.Model(&r).Related(&users, "Users")
+
 	for _, client := range hub.Rooms[room] {
 		log.Println("Send messages to client", client.user.Name)
 		client.send <- message
+		sendUsers[client.user.ID] = true
+	}
+	fmt.Printf("room_id: %v, room: %v, users: %v", message.RoomId, r, users)
+	for _, user := range users {
+		if sendUsers[user.ID] {
+			continue
+		}
+		// If user off-line save the message
+		message.UserId = user.ID
+		SaveOfflineMessage(message)
 	}
 }

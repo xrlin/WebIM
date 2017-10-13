@@ -14,7 +14,7 @@ const (
 )
 
 type Message struct {
-	ID        uint      `gorm:"primary_key"`
+	ID        uint      `gorm:"primary_key" json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	UUID      string    `gorm:"not null;unique;column:uuid" json:"uuid"`
@@ -22,7 +22,7 @@ type Message struct {
 	Room      Room      `json:"-"`
 	// Id of the user the message will send to, if zero the message if not for a certain user.
 	// When save offline message, user_id is required.
-	UserId int  `gorm:"not null;index" json:"user_id"`
+	UserId uint `gorm:"not null;index" json:"user_id"`
 	User   User `json:"-"`
 	// Id of the user that sends the message
 	FromUser int    `gorm:"not null;index" json:"from_user" binding:"required"`

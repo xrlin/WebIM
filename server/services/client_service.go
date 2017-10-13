@@ -78,7 +78,9 @@ func (client *Client) Write() {
 				return
 			}
 			if err := client.conn.WriteJSON(msg); err != nil {
+				msg.UserId = client.user.ID
 				SaveOfflineMessage(msg)
+				return
 			}
 		case <-ticker.C:
 			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
