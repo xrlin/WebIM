@@ -50,8 +50,9 @@ func BRPopMessage() (models.Message, error) {
 	return msg, err
 }
 
-func SaveOfflineMessage(msg models.Message) {
-	models.CreateMessage(&msg)
+func SaveOfflineMessage(msg models.Message) error {
+	log.Printf("SaveOfflineMessage")
+	return models.CreateMessage(&msg)
 }
 
 func MonitorAndDeliverMessages(hub *Hub) {
@@ -61,4 +62,29 @@ func MonitorAndDeliverMessages(hub *Hub) {
 			hub.Messages <- message
 		}
 	}
+}
+
+func GetUnreadMessages(user *models.User) ([]*models.Message, error) {
+	if len(user.Rooms) == 0 {
+		database.DBConn.Model(user).Related(&user.Rooms, "Rooms")
+	}
+	var room_ids []uint
+	for _, room := range user.Rooms {
+		room_ids = append(room_ids, room.ID)
+	}
+	messages := make([]*models.Message, 0)
+	err := database.DBConn.Where("from_user <> ? and room_id in (?)", user.ID, room_ids).Find(&messages).Error
+	return messages, err
+}
+
+func DeleteUnreadMessages(user *models.User, message_ids []uint) error {
+	var messages []models.Message
+	database.DBConn.Where("id IN (?)", message_ids).Find(&messages)
+	// check all messages belong to user
+	for _, message := range messages {
+		if message.UserId != user.ID {
+			return fmt.Errorf("User %v can only modify messages of self", user.ID)
+		}
+	}
+	return database.DBConn.Where("id IN (?)", message_ids).Delete(models.Message{}).Error
 }

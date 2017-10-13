@@ -21,6 +21,8 @@ func RouterEngine() *gin.Engine {
 		api.GET("/friends", middlewares.Auth(), controllers.GetFriends)
 		api.GET("/users/search", controllers.SearchUsers)
 		api.DELETE("/rooms/:roomID/leave", middlewares.Auth(), controllers.LeaveRoom)
+		api.GET("/messages/unread", middlewares.Auth(), controllers.GetUnreadOfflineMessages)
+		api.DELETE("/messages/ack", middlewares.Auth(), controllers.AckReceive)
 	}
 	ws := router.Group("/ws")
 	ws.Use(middlewares.Auth())

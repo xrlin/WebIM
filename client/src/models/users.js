@@ -12,6 +12,8 @@ import {
 } from "../services/users";
 import {routerRedux} from "dva/router";
 import {leaveRoom} from "../services/rooms";
+import {generateUUID} from "../utils/common";
+import {ackMessages, retrieveUnreaOfflinedMessages} from "../services/messages";
 
 const SingleMessage = 1, RoomMessage = 2;
 
@@ -109,6 +111,7 @@ export default {
       let message = {
         content: inputMessage,
         msg_type: 2,
+        uuid: generateUUID(),
         user_id: current_user.id,
         room_id: current_room.id,
         from_user: current_user.id
@@ -152,6 +155,16 @@ export default {
       yield call(leaveRoom, roomID);
       yield put({type: 'removeRoom', payload: roomID});
       yield call(retrieveFriends);
+    },
+    * retrieveOfflineMessages({}, {call, put}) {
+      let {data} = yield call(retrieveUnreaOfflinedMessages);
+      let {messages} = data;
+      for (let msg of messages) {
+        yield put({type: 'addMessage', payload: msg})
+      }
+    },
+    * ackMessages({payload: messageIds}, {call}) {
+      yield call(ackMessages, messageIds);
     }
   },
   subscriptions: {
@@ -187,7 +200,10 @@ export default {
           });
           dispatch({
             type: 'retrieveFriends'
-          })
+          });
+          dispatch({
+            type: 'retrieveOfflineMessages'
+          });
         }
       });
     }

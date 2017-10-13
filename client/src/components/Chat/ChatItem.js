@@ -12,6 +12,23 @@ class ChatItem extends React.Component {
     super(props)
   }
 
+  componentDidUpdate(prevProps) {
+    let active = this.props.currentRoom.id === this.props.room.id;
+    let {dispatch} = this.props;
+    let prevNewMessages = prevProps.newMessages;
+    if (active && prevNewMessages.length > 0) {
+      let messageIds = [];
+      for (let msg of prevNewMessages) {
+        if (!msg.id) continue;
+        messageIds.push(msg.id);
+      }
+      dispatch({
+        type: 'users/ackMessages',
+        payload: messageIds
+      })
+    }
+  }
+
   setCurrentRoom = () => {
     this.props.dispatch({
       type: 'users/setCurrentRoom',
