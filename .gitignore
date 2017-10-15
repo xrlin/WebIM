@@ -16,6 +16,9 @@
 # ignore jetbrains' ide folder
 .idea/
 
+# ignore config files
+./config/*.json
+
 # ignore secret config
 /server/config/*
 !/server/config/*.go
