@@ -11,7 +11,7 @@ function ChatMessage({message, current_user}) {
         <div className={styles.bubble}>
           <div className={styles.bubble_content}>
             <div className={styles.plain}>
-              <pre dangerouslySetInnerHTML={{__html: messagetToHtml(message.content)}}/>
+              <pre dangerouslySetInnerHTML={{__html: messagetToHtml(message)}}/>
             </div>
           </div>
         </div>

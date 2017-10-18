@@ -1,6 +1,11 @@
 import styles from './UserAvatar.less';
 import {connect} from 'dva';
 import {Button} from 'antd';
+import ReactDom from 'react-dom';
+import AvatarCropper from "react-avatar-cropper";
+import {uploadImage} from "../../utils/request";
+import {dataURLtoBlob} from "../../utils/common";
+import {getAvatarUrl} from "../../utils/url";
 
 class UserAvatar extends React.Component {
   constructor(props) {
@@ -10,10 +15,18 @@ class UserAvatar extends React.Component {
       profileX: 0,
       profileY: 0,
       addFriendBtnDisabled: !props.isFriend,
-      addFriendBtnLoading: false
+      addFriendBtnLoading: false,
+      img: null,
+      croppedImg: getAvatarUrl(props.user.avatar),
+      cropperOpen: false
     };
     this.showModal = this.showModal.bind(this);
     this.hideModal = this.hideModal.bind(this);
+  }
+
+  componentWillUpdate(nextProps, nextState) {
+    let croppedImg = getAvatarUrl(nextProps.user.avatar);
+    if (nextState.croppedImg !== croppedImg) this.setState({croppedImg});
   }
 
   showModal({clientX, clientY}) {
@@ -39,6 +52,29 @@ class UserAvatar extends React.Component {
     this.setState({modalVisible: false})
   };
 
+  handleRequestHide = () => {
+    this.setState({cropperOpen: false});
+  };
+
+  handleCrop = async (dataURI, fileName) => {
+    const {dispatch} = this.props;
+    let fileBlob = dataURLtoBlob(dataURI);
+    let {data} = await uploadImage(fileBlob, fileName);
+    dispatch({
+      type: 'users/updateAvatar',
+      payload: data['hash']
+    });
+    this.setState({cropperOpen: false});
+  };
+
+  handleFileChange = (dataURI) => {
+    this.setState({
+      img: dataURI,
+      croppedImg: this.state.croppedImg,
+      cropperOpen: true
+    });
+  };
+
   render() {
     let styleAttrs = {};
     let {width, height} = this.props;
@@ -50,12 +86,21 @@ class UserAvatar extends React.Component {
     }
     return (
       <div className={`${styles['avatar']} ${this.props.className}`}>
-        <img src="https://xrlin.github.io/assets/img/crown-logo.png" style={styleAttrs}
+        <img src={this.state.croppedImg} style={styleAttrs}
              className={this.props.imgClassName} onClick={this.showModal}/>
         <div className={`${styles['profile_mini']} ${this.state.modalVisible ? styles['visible'] : ''}`}
              style={{top: this.state.profileY, left: this.state.profileX}}>
           <div className={styles['profile_mini__header']}>
-            <img src="https://xrlin.github.io/assets/img/crown-logo.png"/>
+            <img src={this.state.croppedImg}/>
+            <FileUpload handleFileChange={this.handleFileChange}/>
+            {this.state.cropperOpen && <AvatarCropper
+              onRequestHide={this.handleRequestHide}
+              onCrop={this.handleCrop}
+              cropperOpen={this.state.cropperOpen}
+              image={this.state.img}
+              width={400}
+              height={400}
+            />}
           </div>
           <div className={styles['profile_mini__body']}>
             <div className={styles['nickname_area']}>
@@ -72,6 +117,27 @@ class UserAvatar extends React.Component {
              onClick={this.hideModal}/>
       </div>
     )
+  }
+}
+
+class FileUpload extends React.Component {
+  handleFile = (e) => {
+    let reader = new FileReader();
+    let file = e.target.files[0];
+
+    if (!file) return;
+
+    reader.onload = function (img) {
+      ReactDom.findDOMNode(this.refs.in).value = '';
+      this.props.handleFileChange(img.target.result, img.target.fileName);
+    }.bind(this);
+    reader.readAsDataURL(file);
+  };
+
+  render() {
+    return (
+      <input ref="in" type="file" accept="image/*" onChange={this.handleFile}/>
+    );
   }
 }
 

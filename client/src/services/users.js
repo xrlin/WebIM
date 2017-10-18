@@ -96,6 +96,15 @@ export function addFriend(friend_id) {
   return request(url, options)
 }
 
+export function updateAvatar(avatarHash) {
+  let options = {
+    method: 'PUT',
+    body: JSON.stringify({avatar: avatarHash})
+  };
+  let url = generateURL('/api/user/avatar');
+  return request(url, options)
+}
+
 export function retrieveFriends() {
   let options = {
     method: 'GET'

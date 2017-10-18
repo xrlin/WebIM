@@ -15,6 +15,7 @@ func RouterEngine() *gin.Engine {
 		api.POST("/user/info", middlewares.Auth(), controllers.GetUserInfo)
 		api.GET("/user/rooms", middlewares.Auth(), controllers.GetRecentRooms)
 		api.POST("/user/rooms", middlewares.Auth(), controllers.CreateRoom)
+		api.PUT("/user/avatar", middlewares.Auth(), controllers.UpdateAvatar)
 		// Register user
 		api.POST("/users", controllers.CreateUser)
 		api.POST("/friends", middlewares.Auth(), controllers.AddFriend)
@@ -23,6 +24,9 @@ func RouterEngine() *gin.Engine {
 		api.DELETE("/rooms/:roomID/leave", middlewares.Auth(), controllers.LeaveRoom)
 		api.GET("/messages/unread", middlewares.Auth(), controllers.GetUnreadOfflineMessages)
 		api.DELETE("/messages/ack", middlewares.Auth(), controllers.AckReceive)
+
+		// qiniu
+		api.POST("/qiniu/uptoken", middlewares.Auth(), controllers.UploadToken)
 	}
 	ws := router.Group("/ws")
 	ws.Use(middlewares.Auth())

@@ -90,7 +90,7 @@ class ChatBox extends React.Component {
   send = (message) => {
     this.props.dispatch({
       type: 'users/sendMessage',
-      payload: message
+      payload: {content: message, msgType: 2}
     });
     this.props.dispatch({
       type: 'users/updateRoomInputMessages',

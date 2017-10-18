@@ -26,6 +26,10 @@ func RegisterUser(user *models.User) error {
 	return models.CreateUser(user)
 }
 
+func UpdateAvatar(user *models.User, avatar string) error {
+	return database.DBConn.Model(user).Update("avatar", avatar).Error
+}
+
 type room struct {
 	models.Room
 	UniqueName string `json:"unique_name"`

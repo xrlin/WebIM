@@ -11,6 +11,10 @@ const (
 	_ = iota
 	SingleMessage
 	RoomMessage
+	SingleImageMessage
+	RoomImageMessage
+	SingleMusicMessage
+	RoomMusicMessage
 )
 
 type Message struct {

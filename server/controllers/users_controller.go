@@ -49,6 +49,34 @@ func CreateUser(c *gin.Context) {
 	}
 }
 
+type avatarInfo struct {
+	Avatar string `json:"avatar" binding:"required"`
+}
+
+type UserDetail struct {
+	models.User
+	AvatarUrl string `json:"avatar_url"`
+}
+
+func UpdateAvatar(c *gin.Context) {
+	userObj, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"errors": "No such user!"})
+		return
+	}
+	var avatarInfo avatarInfo
+	if err := c.BindJSON(&avatarInfo); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": err})
+		return
+	}
+	user := userObj.(*models.User)
+	if err := services.UpdateAvatar(user, avatarInfo.Avatar); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": err})
+	}
+	userDetail := UserDetail{User: *user, AvatarUrl: user.AvatarUrl()}
+	c.JSON(http.StatusOK, gin.H{"user": userDetail})
+}
+
 func GetUserInfo(c *gin.Context) {
 	userObj, ok := c.Get("user")
 	if !ok {
@@ -81,7 +109,7 @@ func SearchUsers(c *gin.Context) {
 }
 
 type friendInfo struct {
-	FriendID uint `json:"friend_id" binding: "required"`
+	FriendID uint `json:"friend_id" binding:"required"`
 }
 
 func AddFriend(c *gin.Context) {
