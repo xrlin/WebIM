@@ -1,8 +1,8 @@
 import styles from './UserAvatar.less';
 import {connect} from 'dva';
-import {Button} from 'antd';
+import {Button, Modal, Slider} from 'antd';
 import ReactDom from 'react-dom';
-import AvatarCropper from "react-avatar-cropper";
+import AvatarEditor from 'react-avatar-editor'
 import {uploadImage} from "../../utils/request";
 import {dataURLtoBlob} from "../../utils/common";
 import {getAvatarUrl} from "../../utils/url";
@@ -52,29 +52,6 @@ class UserAvatar extends React.Component {
     this.setState({modalVisible: false})
   };
 
-  handleRequestHide = () => {
-    this.setState({cropperOpen: false});
-  };
-
-  handleCrop = async (dataURI, fileName) => {
-    const {dispatch} = this.props;
-    let fileBlob = dataURLtoBlob(dataURI);
-    let {data} = await uploadImage(fileBlob, fileName);
-    dispatch({
-      type: 'users/updateAvatar',
-      payload: data['hash']
-    });
-    this.setState({cropperOpen: false});
-  };
-
-  handleFileChange = (dataURI) => {
-    this.setState({
-      img: dataURI,
-      croppedImg: this.state.croppedImg,
-      cropperOpen: true
-    });
-  };
-
   render() {
     let styleAttrs = {};
     let {width, height} = this.props;
@@ -92,15 +69,7 @@ class UserAvatar extends React.Component {
              style={{top: this.state.profileY, left: this.state.profileX}}>
           <div className={styles['profile_mini__header']}>
             <img src={this.state.croppedImg}/>
-            <FileUpload handleFileChange={this.handleFileChange}/>
-            {this.state.cropperOpen && <AvatarCropper
-              onRequestHide={this.handleRequestHide}
-              onCrop={this.handleCrop}
-              cropperOpen={this.state.cropperOpen}
-              image={this.state.img}
-              width={400}
-              height={400}
-            />}
+            <Cropper dispatch={this.props.dispatch}/>
           </div>
           <div className={styles['profile_mini__body']}>
             <div className={styles['nickname_area']}>
@@ -129,7 +98,7 @@ class FileUpload extends React.Component {
 
     reader.onload = function (img) {
       ReactDom.findDOMNode(this.refs.in).value = '';
-      this.props.handleFileChange(img.target.result, img.target.fileName);
+      this.props.handleFileChange(img.target.result);
     }.bind(this);
     reader.readAsDataURL(file);
   };
@@ -141,6 +110,70 @@ class FileUpload extends React.Component {
   }
 }
 
+
+class Cropper extends React.Component {
+  state = {
+    visible: false,
+    image: null,
+    croppedImage: null,
+    confirmLoading: false,
+    scale: 1
+  };
+
+  handleFileChange = (dataURI) => {
+    this.setState({
+      image: dataURI,
+      visible: true
+    });
+  };
+
+  handleCancel = () => {
+    this.setState({visible: false, scale: 1})
+  };
+
+  submit = async () => {
+    const {dispatch} = this.props;
+    let dataURI = this.refs.avatarEditor.getImageScaledToCanvas().toDataURL();
+    let fileBlob = dataURLtoBlob(dataURI);
+    this.setState({confirmLoading: true});
+    let {data} = await uploadImage(fileBlob);
+    dispatch({
+      type: 'users/updateAvatar',
+      payload: data['hash']
+    });
+    this.setState({visible: false, confirmLoading: false, scale: 1})
+  };
+
+  scaleChange = (scale) => {
+    this.setState({scale});
+  };
+
+  render() {
+    const {visible, confirmLoading, image, scale} = this.state;
+    return (
+      <div>
+        <FileUpload handleFileChange={this.handleFileChange}/>
+        <Modal style={{top: 20}} title="头像编辑" visible={visible} confirmLoading={confirmLoading}
+               onCancel={this.handleCancel} onOk={this.submit}>
+          <div className={styles['cropper']}>
+            <AvatarEditor
+              ref="avatarEditor"
+              image={image}
+              width={250}
+              height={250}
+              scale={scale}
+              border={0}
+              rotate={0}
+            />
+            <Slider min={1} max={2} defaultValue={1} step={0.01} value={scale} onChange={this.scaleChange}/>
+          </div>
+        </Modal>
+      </div>
+    )
+  }
+}
+
+console
 function checkIsFriend(friends, user, current_user) {
   if (current_user.id === user.id) {
     return true
