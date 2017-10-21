@@ -173,7 +173,6 @@ class Cropper extends React.Component {
   }
 }
 
-console
 function checkIsFriend(friends, user, current_user) {
   if (current_user.id === user.id) {
     return true

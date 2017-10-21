@@ -11,13 +11,21 @@ function generateURL(path) {
   return 'http://localhost:8080' + path
 }
 
-function getAvatarUrl(avatarHash) {
-  if (!avatarHash) return 'https://xrlin.github.io/assets/img/crown-logo.png';
-  return `http://oxupzzce5.bkt.clouddn.com/${avatarHash}`
+function getAvatarUrl(avatarHash, width, height) {
+  let avatarUrl = '';
+  if (!avatarHash) {
+    avatarUrl = 'https://xrlin.github.io/assets/img/crown-logo.png';
+  } else {
+    avatarUrl = `http://oxupzzce5.bkt.clouddn.com/${avatarHash}`
+  }
+  if (width && height) {
+    avatarUrl = `${avatarUrl}?imageView2/2/w/${width}/h/${height}`
+  }
+  return avatarUrl
 }
 
-function getImageUrls(imageHash) {
-  let thumbnailUrl = `http://oxupzzce5.bkt.clouddn.com/${imageHash}?imageView2/2/w/100/h/150`;
+function getImageUrls(imageHash, width = 100, height = 150) {
+  let thumbnailUrl = `http://oxupzzce5.bkt.clouddn.com/${imageHash}?imageView2/2/w/${width}/h/${height}`;
   let imageUrl = `http://oxupzzce5.bkt.clouddn.com/${imageHash}`;
   return {thumbnailUrl, imageUrl}
 }

@@ -6,6 +6,81 @@ import React from 'react';
 import style from './ChatItem.less';
 import {connect} from 'dva';
 import {ContextMenu, ContextMenuTrigger, MenuItem} from "react-contextmenu";
+import {getAvatarUrl} from "../../utils/url";
+
+class RoomAvatar extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  async componentDidMount() {
+    let {room} = this.props;
+    let canvas = this.canvas;
+    let imgList = [];
+    // 非群聊
+    room.users.forEach(user => imgList.push(user.avatar));
+    this.combineAvatars(canvas, imgList);
+  }
+
+  async combineAvatars(canvas, imgList) {
+    const {width, height, padding, background} = this.props;
+    let ctx = canvas.getContext('2d');
+    let len = imgList.length;
+    ctx.rect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = background || '#eeeeee';
+    ctx.fill();
+    let {cellWidth, cellHeight, cellPadding, totalCells} = this.calculateCells(width, height, padding, len);
+    let count = 0;
+    for (let idxY = cellPadding; idxY < height;) {
+      for (let idxX = cellPadding; idxX < width;) {
+        const img = await this.loadImage(getAvatarUrl(imgList[count]));
+        ctx.drawImage(img, idxX, idxY, cellWidth, cellHeight);
+        idxX = idxX + cellPadding + cellWidth;
+        count += 1;
+        if (count === totalCells) break;
+      }
+      idxY = idxY + cellPadding + cellHeight;
+    }
+  }
+
+  calculateCells = (width, height, padding, total) => {
+    let cellWidth, cellHeight, cellPadding, rows, totalCells;
+    cellPadding = padding;
+    if (total === 1) {
+      cellPadding = 0
+    }
+    if (total / 2 <= 1) {
+      rows = 1;
+    } else if (total / 3 <= 1) {
+      rows = 2;
+    } else {
+      rows = 3;
+    }
+    cellHeight = (height - (rows + 1) * cellPadding) / rows;
+    cellWidth = (width - (rows + 1) * cellPadding) / rows;
+    totalCells = total - rows * rows >= 0 ? rows * rows : total;
+    return {cellWidth, cellHeight, rows, cellPadding, totalCells}
+  };
+
+  // It's better to use async image loading.
+  loadImage = url => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error(`load ${url} fail`));
+      img.src = url;
+    });
+  };
+
+  render() {
+    let {width, height} = this.props;
+    return (
+      <div>
+        <canvas ref={(c) => this.canvas = c} width={width} height={height} className={style['img']}/>
+      </div>
+    )
+  }
+}
 
 class ChatItem extends React.Component {
   constructor(props) {
@@ -51,7 +126,7 @@ class ChatItem extends React.Component {
             className={`${style['chat-item']} ${this.props.currentRoom.id === this.props.room.id ? style['active'] : ''}`}
             onClick={this.setCurrentRoom}>
             <div className={style['avatar']}>
-              <img src="https://xrlin.github.io/assets/img/crown-logo.png" className={style['img']}/>
+              <RoomAvatar className={style['img']} room={this.props.room} width={40} height={40} padding={2}/>
               <div
                 className={`${style['message-notification']} ${this.props.newMessages.length > 0 ? style['visible'] : ''}`}>
                 {this.props.newMessages.length}
