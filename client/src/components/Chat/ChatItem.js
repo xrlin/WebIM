@@ -11,36 +11,43 @@ import {getAvatarUrl} from "../../utils/url";
 class RoomAvatar extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {
+      avatars: null
+    }
   }
 
   async componentDidMount() {
     let {room} = this.props;
-    let canvas = this.canvas;
     let imgList = [];
     // 非群聊
     room.users.forEach(user => imgList.push(user.avatar));
-    this.combineAvatars(canvas, imgList);
+    this.combineAvatars(imgList);
   }
 
-  async combineAvatars(canvas, imgList) {
-    const {width, height, padding, background} = this.props;
-    let ctx = canvas.getContext('2d');
+  async combineAvatars(imgList) {
+    const {width, height, padding} = this.props;
     let len = imgList.length;
-    ctx.rect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = background || '#eeeeee';
-    ctx.fill();
     let {cellWidth, cellHeight, cellPadding, totalCells} = this.calculateCells(width, height, padding, len);
+    let avatars = [];
     let count = 0;
     for (let idxY = cellPadding; idxY < height;) {
       for (let idxX = cellPadding; idxX < width;) {
-        const img = await this.loadImage(getAvatarUrl(imgList[count]));
-        ctx.drawImage(img, idxX, idxY, cellWidth, cellHeight);
+        let cellStyle = {
+          width: cellWidth,
+          height: cellHeight,
+          position: 'absolute',
+          left: idxX + 'px',
+          top: idxY + 'px'
+        };
+        const img = <img src={getAvatarUrl(imgList[count])} style={cellStyle}/>;
+        avatars.push(img);
         idxX = idxX + cellPadding + cellWidth;
         count += 1;
         if (count === totalCells) break;
       }
       idxY = idxY + cellPadding + cellHeight;
     }
+    this.setState({avatars})
   }
 
   calculateCells = (width, height, padding, total) => {
@@ -62,21 +69,17 @@ class RoomAvatar extends React.Component {
     return {cellWidth, cellHeight, rows, cellPadding, totalCells}
   };
 
-  // It's better to use async image loading.
-  loadImage = url => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error(`load ${url} fail`));
-      img.src = url;
-    });
-  };
-
   render() {
-    let {width, height} = this.props;
+    let {width, height, background} = this.props;
+    let wrapperStyle = {
+      width: width + 'px',
+      height: height + 'px',
+      position: 'relative',
+      background: (background || '#eeeeee')
+    };
     return (
-      <div>
-        <canvas ref={(c) => this.canvas = c} width={width} height={height} className={style['img']}/>
+      <div style={wrapperStyle}>
+        {this.state.avatars}
       </div>
     )
   }
