@@ -22,7 +22,7 @@ function checkStatus(response) {
  * @param  {object} [options] The options we want to pass to "fetch"
  * @return {object}           An object containing either "data" or "err"
  */
-export default async function request(url, options) {
+async function request(url, options) {
   let defaultHeaders = new Headers({"Content-Type": "application/json"});
   if (sessionStorage.getItem('token')) {
     defaultHeaders.append('Authorization', `Bearer ${sessionStorage.getItem('token')}`);
@@ -34,12 +34,14 @@ export default async function request(url, options) {
   };
   if (options.headers) {
     for (let pair of options.headers.entries()) {
-      console.log(pair);
       defaultHeaders.set(pair[0], pair[1]);
     }
     options.headers = defaultHeaders;
   }
   options = Object.assign(defaultOptions, options);
+  if (options.headers && options.headers.get('content-type') === 'false') {
+    options.headers.delete('content-type')
+  }
   const response = await fetch(url, options);
 
   checkStatus(response);
@@ -54,4 +56,22 @@ function refreshLocalToken(response) {
   if (token) {
     sessionStorage.setItem('token', token);
   }
+}
+
+export default request;
+
+export async function getUploadToken() {
+  let {data} = await request('http://localhost:8080/api/qiniu/uptoken', {method: 'POST'});
+  return data['uptoken']
+}
+
+export async function uploadImage(fileObj, fileName) {
+  let QiniuUploadUrl = 'https://upload-z2.qiniup.com';
+  let upToken = await getUploadToken();
+  let formData = new FormData();
+  formData.append('token', upToken);
+  formData.append('file', fileObj, fileName);
+  let header = new Headers({"Content-Type": false});
+  let {data} = await request(QiniuUploadUrl, {method: 'POST', body: formData, headers: header});
+  return {data}
 }

@@ -17,7 +17,11 @@ func GetUnreadOfflineMessages(c *gin.Context) {
 	if messages, err := services.GetUnreadMessages(user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	} else {
-		c.JSON(http.StatusOK, gin.H{"messages": messages})
+		msgDetails := make([]models.MessageDetail, 0)
+		for _, msg := range messages {
+			msgDetails = append(msgDetails, msg.GetDetails())
+		}
+		c.JSON(http.StatusOK, gin.H{"messages": msgDetails})
 	}
 }
 

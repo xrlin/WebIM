@@ -1,5 +1,7 @@
 import {
+  ackReadNotifications,
   addFriend,
+  applyFriendship,
   createRoom,
   getRecentRooms,
   getUserInfo,
@@ -8,7 +10,8 @@ import {
   requestToken,
   retrieveFriends,
   sendMessage,
-  TokenMissingError
+  TokenMissingError,
+  updateAvatar
 } from "../services/users";
 import {routerRedux} from "dva/router";
 import {leaveRoom} from "../services/rooms";
@@ -25,6 +28,7 @@ export default {
     currentRoom: {},
     messages: {},
     newMessages: {},
+    notifications: [],
     roomInputMessages: {},
     friends: [],
     info: {}
@@ -43,6 +47,13 @@ export default {
       return Object.assign({}, state, {...state, rooms: currentRooms, roomIDs})
     },
     addMessage(state, {payload: message}) {
+      const FriendshipMessage = 7;
+      // Add notification
+      if (message.msg_type === FriendshipMessage) {
+        let {notifications} = state;
+        notifications.push(message);
+        return Object.assign({}, state, {...state, notifications: notifications});
+      }
       let {messages, newMessages} = state;
       let room_id = message.room_id;
       if (messages[room_id]) {
@@ -97,20 +108,20 @@ export default {
     }
   },
   effects: {
-    *login({payload: {username, password}}, {call, put}) {
+    * login({payload: {username, password}}, {call, put}) {
       let {data} = yield call(requestToken, username, password);
       sessionStorage.setItem("token", data.token);
       yield put(routerRedux.push({pathname: '/'}));
     },
-    *register({payload: {username, password}}, {call, put}) {
+    * register({payload: {username, password}}, {call, put}) {
       let {data} = yield call(register, username, password);
       yield put(routerRedux.push({pathname: '/login'}));
     },
-    * sendMessage({payload: inputMessage}, {call, put, select}) {
+    * sendMessage({payload: {content, msgType}}, {call, put, select}) {
       let [current_user, current_room] = yield select(({users}) => [users.info, users.currentRoom]);
       let message = {
-        content: inputMessage,
-        msg_type: 2,
+        content: content,
+        msg_type: msgType,
         uuid: generateUUID(),
         user_id: current_user.id,
         room_id: current_room.id,
@@ -165,6 +176,17 @@ export default {
     },
     * ackMessages({payload: messageIds}, {call}) {
       yield call(ackMessages, messageIds);
+    },
+    * updateAvatar({payload: avatarHash}, {call, put}) {
+      let {data} = yield call(updateAvatar, avatarHash);
+      yield put({type: 'updateInfo', payload: data['user']})
+    },
+    * applyFriendship({payload: userID}, {call, put}) {
+      yield call(applyFriendship, userID);
+      yield put(retrieveOfflineMessages)
+    },
+    * ackReadNotifications({payload: uuidArray}, {call}) {
+      yield call(ackReadNotifications, uuidArray)
     }
   },
   subscriptions: {
@@ -182,7 +204,6 @@ export default {
               });
             });
             ws.addEventListener('close', function () {
-              console.log('close');
               dispatch(routerRedux.push({pathname: '/login'}));
             });
           } catch (e) {
@@ -227,3 +248,4 @@ function clearUnreadMessage(unreadMessages, roomID) {
   unreadMessages[roomID] = [];
   return unreadMessages
 }
+

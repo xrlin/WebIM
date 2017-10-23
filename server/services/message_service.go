@@ -59,7 +59,7 @@ func MonitorAndDeliverMessages(hub *Hub) {
 	for {
 		message, err := BRPopMessage()
 		if err == nil {
-			hub.Messages <- message
+			hub.Messages <- message.GetDetails()
 		}
 	}
 }
@@ -73,7 +73,7 @@ func GetUnreadMessages(user *models.User) ([]*models.Message, error) {
 		room_ids = append(room_ids, room.ID)
 	}
 	messages := make([]*models.Message, 0)
-	err := database.DBConn.Where("from_user <> ? and room_id in (?)", user.ID, room_ids).Find(&messages).Error
+	err := database.DBConn.Where("user_id = ? AND read <> true", user.ID).Find(&messages).Error
 	return messages, err
 }
 

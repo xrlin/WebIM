@@ -17,7 +17,7 @@ type Hub struct {
 	Rooms map[string][]*Client
 
 	// Inbound messages from the clients.
-	Messages chan models.Message
+	Messages chan models.MessageDetail
 
 	// Register requests from the clients.
 	Register chan *Client
@@ -41,7 +41,7 @@ func NewHub() *Hub {
 	return &Hub{
 		clients:    make([]*Client, 0),
 		Rooms:      make(map[string][]*Client),
-		Messages:   make(chan models.Message, 512),
+		Messages:   make(chan models.MessageDetail, 512),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		UpdateRoom: make(chan *models.Room, 128),
@@ -154,7 +154,8 @@ func (hub *Hub) removeClient(client *Client) {
 	}
 }
 
-func (hub *Hub) deliver(message models.Message) {
+func (hub *Hub) deliver(messageDetail models.MessageDetail) {
+	message := messageDetail.Message
 	fmt.Println(message.MsgType)
 	fmt.Println(models.SingleMessage)
 	fmt.Println("Rooms", hub.Rooms)
@@ -183,7 +184,7 @@ func (hub *Hub) deliverMsgToRoom(room string, message models.Message) {
 
 	for _, client := range hub.Rooms[room] {
 		log.Println("Send messages to client", client.user.Name)
-		client.send <- message
+		client.send <- message.GetDetails()
 		sendUsers[client.user.ID] = true
 	}
 	fmt.Printf("room_id: %v, room: %v, users: %v", message.RoomId, r, users)

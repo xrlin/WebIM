@@ -3,15 +3,18 @@ package models
 import (
 	"errors"
 	"fmt"
+	"github.com/xrlin/WebIM/server/config"
 	"github.com/xrlin/WebIM/server/database"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
 type User struct {
-	ID           uint       `gorm:"primary_key" json:"id"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
+	ID        uint      `gorm:"primary_key" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	// Hash(file name) of avatar in cdn
+	Avatar       string     `json:"avatar"`
 	Name         string     `gorm:"not null;unique_index:idx_name_deleted_at;" json:"name"`
 	DeletedAt    *time.Time `sql:"index" gorm:"unique_index:idx_name_deleted_at" json:"deleted_at"`
 	Password     string     `gorm:"-" json:"-"`
@@ -20,6 +23,13 @@ type User struct {
 	Messages []Message `json:"-"`
 
 	Rooms []Room `gorm:"many2many:user_rooms" json:"-"`
+}
+
+func (u *User) AvatarUrl() string {
+	if u.Avatar == "" {
+		return "https://xrlin.github.io/assets/img/crown-logo.png"
+	}
+	return config.QiniuCfg.FileDomain + "/" + u.Avatar
 }
 
 // Room name just for user itself

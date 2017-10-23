@@ -1,9 +1,14 @@
 import React from 'react';
-import {Button, Icon} from 'antd';
+import {Button, Icon, Input, message, Modal} from 'antd';
 import ReactDOMServer from 'react-dom/server';
+import ReactDom from 'react-dom';
 import styles from './EditArea.less';
 import {htmlToMessage} from "../../utils/message";
 import {Scrollbars} from "react-custom-scrollbars";
+import {uploadImage} from "../../utils/request";
+import {dataURLtoBlob} from "../../utils/common";
+import {connect} from 'dva';
+import {getMusicIdFromLink} from "../../utils/url";
 
 function Face({faceID, faceText, onClick}) {
   let clickHandler = onClick || (() => {
@@ -63,6 +68,8 @@ class InputMenu extends React.Component {
             {emojs}
           </div>
         </div>
+        <FileInputMenu dispatch={this.props.dispatch}/>
+        <MusicMenu dispatch={this.props.dispatch}/>
         <div id="face-selector__mask"
              className={`${styles['mask']} ${this.state.faceSelectorVisible ? styles['visible'] : ''}`}
              onClick={this.hideFaceSelector}/>
@@ -71,9 +78,95 @@ class InputMenu extends React.Component {
   }
 }
 
+class FileInputMenu extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      file: null
+    }
+  }
+
+  handleFile = (e) => {
+    let reader = new FileReader();
+    let file = e.target.files[0];
+
+    if (!file) return;
+
+    reader.onload = async function (img) {
+      ReactDom.findDOMNode(this.refs.in).value = '';
+      let fileBlob = dataURLtoBlob(img.target.result);
+      let {data} = await uploadImage(fileBlob, file.fileName);
+      this.props.dispatch({
+        type: 'users/sendMessage',
+        payload: {content: data['hash'], msgType: 4}
+      });
+    }.bind(this);
+    reader.readAsDataURL(file);
+  };
+
+  render() {
+    return (
+      <div className={styles["file-menu__wrapper"]}>
+        <Icon type="folder"/>
+        <input ref="in" type="file" accept="image/*" onChange={this.handleFile}/>
+      </div>
+    )
+  }
+}
+
+class MusicMenu extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      visible: false,
+      musicLink: ''
+    }
+  }
+
+  showModal = () => {
+    this.setState({visible: true});
+  };
+
+  handleCancel = () => {
+    this.setState({visible: false, musicLink: ''});
+  };
+
+  handleOk = () => {
+    let link = this.state.musicLink;
+    let result = getMusicIdFromLink(link);
+    if (!result) {
+      message.error('不能解析音乐信息，请核对输入！');
+      return
+    }
+    this.props.dispatch({
+      type: 'users/sendMessage',
+      payload: {content: result, msgType: 6}
+    });
+    this.setState({visible: false, musicLink: ''})
+  };
+
+  updateMusicLink = (event) => {
+    this.setState({musicLink: event.target.value})
+  };
+
+  render() {
+    return (
+      <div>
+        <Button type="primary" icon="share-alt" size="small" onClick={this.showModal}/>
+        <Modal title="Title"
+               visible={this.state.visible}
+               onOk={this.handleOk}
+               onCancel={this.handleCancel}
+        >
+          <Input value={this.state.musicLink} onChange={this.updateMusicLink} placeholder="请输入音乐链接，暂时只支持网易云音乐"/>
+        </Modal>
+      </div>
+    )
+  }
+}
 class EditArea extends React.Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
       lastEditRange: null
     };
@@ -84,7 +177,7 @@ class EditArea extends React.Component {
     let {html, id, ...props} = this.props;
     return (
       <div className={styles['edit-wrapper']}>
-        <InputMenu/>
+        <InputMenu dispatch={this.props.dispatch}/>
         <div className={styles['pre-wrapper']}>
           <Scrollbars
             autoHideTimeout={1} autoHide={true} hideTracksWhenNotNeeded={true}
@@ -219,5 +312,8 @@ class EditArea extends React.Component {
 
 }
 
+function mapStateToProps({}, ownProps) {
+  return {...ownProps}
+}
 
-export default EditArea;
+export default connect(mapStateToProps)(EditArea);

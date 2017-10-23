@@ -35,7 +35,7 @@ type Client struct {
 	hub  *Hub
 	user *models.User
 	conn *websocket.Conn
-	send chan models.Message
+	send chan models.MessageDetail
 }
 
 func (client *Client) Read() {
@@ -70,16 +70,16 @@ func (client *Client) Write() {
 	}()
 	for {
 		select {
-		case msg, ok := <-client.send:
-			log.Printf("Message to client %#v", msg)
+		case msgDetail, ok := <-client.send:
+			log.Printf("Message to client %#v", msgDetail)
 			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				client.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-			if err := client.conn.WriteJSON(msg); err != nil {
-				msg.UserId = client.user.ID
-				SaveOfflineMessage(msg)
+			if err := client.conn.WriteJSON(msgDetail); err != nil {
+				msgDetail.UserId = client.user.ID
+				SaveOfflineMessage(msgDetail.Message)
 				return
 			}
 		case <-ticker.C:
@@ -101,6 +101,6 @@ func NewClient(hub *Hub, user *models.User, w http.ResponseWriter, r *http.Reque
 		log.Println(err)
 		return nil, err
 	}
-	client := &Client{hub: hub, user: user, conn: conn, send: make(chan models.Message, 256)}
+	client := &Client{hub: hub, user: user, conn: conn, send: make(chan models.MessageDetail, 256)}
 	return client, nil
 }

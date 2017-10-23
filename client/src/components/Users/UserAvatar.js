@@ -1,6 +1,11 @@
 import styles from './UserAvatar.less';
 import {connect} from 'dva';
-import {Button} from 'antd';
+import {Button, Modal, Slider} from 'antd';
+import ReactDom from 'react-dom';
+import AvatarEditor from 'react-avatar-editor'
+import {uploadImage} from "../../utils/request";
+import {dataURLtoBlob} from "../../utils/common";
+import {getAvatarUrl} from "../../utils/url";
 
 class UserAvatar extends React.Component {
   constructor(props) {
@@ -10,10 +15,18 @@ class UserAvatar extends React.Component {
       profileX: 0,
       profileY: 0,
       addFriendBtnDisabled: !props.isFriend,
-      addFriendBtnLoading: false
+      addFriendBtnLoading: false,
+      img: null,
+      croppedImg: getAvatarUrl(props.user.avatar),
+      cropperOpen: false
     };
     this.showModal = this.showModal.bind(this);
     this.hideModal = this.hideModal.bind(this);
+  }
+
+  componentWillUpdate(nextProps, nextState) {
+    let croppedImg = getAvatarUrl(nextProps.user.avatar);
+    if (nextState.croppedImg !== croppedImg) this.setState({croppedImg});
   }
 
   showModal({clientX, clientY}) {
@@ -29,8 +42,8 @@ class UserAvatar extends React.Component {
   addFriend = () => {
     this.setState({addFriendBtnLoading: true});
     this.props.dispatch({
-      type: 'users/addFriend',
-      payload: {friend_id: this.props.user.id}
+      type: 'users/applyFriendship',
+      payload: this.props.user.id
     });
     this.setState({addFriendBtnLoading: false, addFriendBtnDisabled: true});
   };
@@ -50,12 +63,13 @@ class UserAvatar extends React.Component {
     }
     return (
       <div className={`${styles['avatar']} ${this.props.className}`}>
-        <img src="https://xrlin.github.io/assets/img/crown-logo.png" style={styleAttrs}
+        <img src={this.state.croppedImg} style={styleAttrs}
              className={this.props.imgClassName} onClick={this.showModal}/>
         <div className={`${styles['profile_mini']} ${this.state.modalVisible ? styles['visible'] : ''}`}
              style={{top: this.state.profileY, left: this.state.profileX}}>
           <div className={styles['profile_mini__header']}>
-            <img src="https://xrlin.github.io/assets/img/crown-logo.png"/>
+            <img src={this.state.croppedImg}/>
+            <Cropper dispatch={this.props.dispatch}/>
           </div>
           <div className={styles['profile_mini__body']}>
             <div className={styles['nickname_area']}>
@@ -70,6 +84,90 @@ class UserAvatar extends React.Component {
         </div>
         <div className={`${styles['mask']} ${this.state.modalVisible ? styles['visible'] : ''}`}
              onClick={this.hideModal}/>
+      </div>
+    )
+  }
+}
+
+class FileUpload extends React.Component {
+  handleFile = (e) => {
+    let reader = new FileReader();
+    let file = e.target.files[0];
+
+    if (!file) return;
+
+    reader.onload = function (img) {
+      ReactDom.findDOMNode(this.refs.in).value = '';
+      this.props.handleFileChange(img.target.result);
+    }.bind(this);
+    reader.readAsDataURL(file);
+  };
+
+  render() {
+    return (
+      <input ref="in" type="file" accept="image/*" onChange={this.handleFile}/>
+    );
+  }
+}
+
+
+class Cropper extends React.Component {
+  state = {
+    visible: false,
+    image: null,
+    croppedImage: null,
+    confirmLoading: false,
+    scale: 1
+  };
+
+  handleFileChange = (dataURI) => {
+    this.setState({
+      image: dataURI,
+      visible: true
+    });
+  };
+
+  handleCancel = () => {
+    this.setState({visible: false, scale: 1})
+  };
+
+  submit = async () => {
+    const {dispatch} = this.props;
+    let dataURI = this.refs.avatarEditor.getImageScaledToCanvas().toDataURL();
+    let fileBlob = dataURLtoBlob(dataURI);
+    this.setState({confirmLoading: true});
+    let {data} = await uploadImage(fileBlob);
+    dispatch({
+      type: 'users/updateAvatar',
+      payload: data['hash']
+    });
+    this.setState({visible: false, confirmLoading: false, scale: 1})
+  };
+
+  scaleChange = (scale) => {
+    this.setState({scale});
+  };
+
+  render() {
+    const {visible, confirmLoading, image, scale} = this.state;
+    return (
+      <div>
+        <FileUpload handleFileChange={this.handleFileChange}/>
+        <Modal style={{top: 20}} title="头像编辑" visible={visible} confirmLoading={confirmLoading}
+               onCancel={this.handleCancel} onOk={this.submit}>
+          <div className={styles['cropper']}>
+            <AvatarEditor
+              ref="avatarEditor"
+              image={image}
+              width={250}
+              height={250}
+              scale={scale}
+              border={0}
+              rotate={0}
+            />
+            <Slider min={1} max={2} defaultValue={1} step={0.01} value={scale} onChange={this.scaleChange}/>
+          </div>
+        </Modal>
       </div>
     )
   }

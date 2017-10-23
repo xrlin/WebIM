@@ -11,6 +11,11 @@ const (
 	_ = iota
 	SingleMessage
 	RoomMessage
+	SingleImageMessage
+	RoomImageMessage
+	SingleMusicMessage
+	RoomMusicMessage
+	FriendshipMessage
 )
 
 type Message struct {
@@ -18,21 +23,29 @@ type Message struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	UUID      string    `gorm:"not null;unique;column:uuid" json:"uuid"`
-	RoomId    int       `gorm:"index" json:"room_id"`
+	RoomId    uint      `gorm:"index" json:"room_id"`
 	Room      Room      `json:"-"`
 	// Id of the user the message will send to, if zero the message if not for a certain user.
 	// When save offline message, user_id is required.
 	UserId uint `gorm:"not null;index" json:"user_id"`
 	User   User `json:"-"`
 	// Id of the user that sends the message
-	FromUser int    `gorm:"not null;index" json:"from_user" binding:"required"`
+	FromUser uint   `gorm:"not null;index" json:"from_user"`
 	MsgType  int    `gorm:"not null" json:"msg_type" binding:"required"`
 	Content  string `gorm:"not null" json:"content"`
+	Checked  bool   `sql:"DEFAULT:false" json:"checked"`
+	Read     bool   `sql:"DEFAULT:false" json:"read"`
+}
+
+type MessageDetail struct {
+	Message
+	SourceUser User `json:"source_user"`
+	TargetUser User `json:"target_user"`
 }
 
 func (msg *Message) BeforeSave() (err error) {
 	err = checkBlank(msg, "UUID")
-	fields := []string{"UUID", "Content", "UserId", "RoomId", "MsgType"}
+	fields := []string{"UUID", "UserId", "MsgType"}
 	for _, field := range fields {
 		err = checkBlank(msg, field)
 		if err != nil {
@@ -68,6 +81,13 @@ func (msg *Message) RoomName() string {
 
 func (msg *Message) UserRoomName() string {
 	return fmt.Sprintf("room_user_%v", msg.UserId)
+}
+
+func (msg Message) GetDetails() MessageDetail {
+	var sourceUser, targetUser User
+	database.DBConn.Where("id = ?", msg.FromUser).Find(&sourceUser)
+	database.DBConn.Where("id = ?", msg.UserId).Find(&targetUser)
+	return MessageDetail{msg, sourceUser, targetUser}
 }
 
 func CreateMessage(msg *Message) error {

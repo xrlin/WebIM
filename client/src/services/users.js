@@ -96,6 +96,15 @@ export function addFriend(friend_id) {
   return request(url, options)
 }
 
+export function updateAvatar(avatarHash) {
+  let options = {
+    method: 'PUT',
+    body: JSON.stringify({avatar: avatarHash})
+  };
+  let url = generateURL('/api/user/avatar');
+  return request(url, options)
+}
+
 export function retrieveFriends() {
   let options = {
     method: 'GET'
@@ -110,5 +119,41 @@ export function createRoom(userIds) {
     body: JSON.stringify({user_ids: userIds})
   };
   let url = generateURL('/api/user/rooms');
+  return request(url, options)
+}
+
+export function applyFriendship(userID) {
+  let options = {
+    method: 'POST',
+    body: JSON.stringify({user_id: userID})
+  };
+  let url = generateURL('/api/friendship/apply');
+  return request(url, options)
+}
+
+/**
+ *
+ * @param uuid the uuid of message(the application)
+ * @param action 'pass' or 'reject'
+ */
+export function checkFriendshipApplication(uuid, action) {
+  let options = {
+    method: 'POST',
+    body: JSON.stringify({uuid, action})
+  };
+  let url = generateURL('/api/friendship/check');
+  return request(url, options)
+}
+
+/**
+ *
+ * @param uuidArray An array of notifications'(also call messages) uuid
+ */
+export function ackReadNotifications(uuidArray) {
+  let options = {
+    method: 'POST',
+    body: JSON.stringify({uuid_array: uuidArray})
+  };
+  let url = generateURL('/api/notifications/read');
   return request(url, options)
 }
