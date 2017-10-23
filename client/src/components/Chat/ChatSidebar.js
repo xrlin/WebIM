@@ -1,6 +1,6 @@
 import React from 'react';
 import style from './ChatSidebar.less';
-import {Dropdown, Icon, Input, Menu} from 'antd';
+import {Button, Dropdown, Icon, Input, Menu, Tabs} from 'antd';
 import ChatItem from './ChatItem';
 import {Scrollbars} from 'react-custom-scrollbars';
 import {connect} from 'dva';
@@ -8,13 +8,60 @@ import SearchModal from "../Users/SearchModal";
 import ChatModal from "./ChatModal";
 import RoomSearch from './RoomSearch';
 import UserAvatar from "../Users/UserAvatar";
+import {checkFriendshipApplication} from "../../services/users";
 
 const Search = Input.Search;
+const TabPane = Tabs.TabPane;
+
+class Notification extends React.Component {
+  checkHandler = async (uuid, action) => {
+    let {data} = await checkFriendshipApplication(uuid, action);
+    const {dispatch} = this.props;
+    dispatch({
+      type: 'users/getRecentRooms'
+    })
+  };
+
+  render() {
+    const {notification} = this.props;
+    return (
+      <div>
+        {notification.source_user.name}申请添加你为好友
+        <Button type="primary" onClick={() => this.checkHandler(notification.uuid, 'pass')}>通过</Button>
+        <Button type="primary" onClick={() => this.checkHandler(notification.uuid, 'reject')}>不通过</Button>
+      </div>
+    )
+  }
+}
 
 class ChatSidebar extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {
+      hasUnreadNotifications: !!props.hasUnreadNotifications
+    }
   }
+
+  componentWillUpdate(nextProps) {
+    if (this.state.hasUnreadNotifications !== nextProps.hasUnreadNotifications) {
+      this.setState({hasUnreadNotifications: !!nextProps.hasUnreadNotifications})
+    }
+  }
+
+  ackReadNotifications = (activeKey) => {
+    if (activeKey !== "2") return;
+    const {dispatch, unreadNotifications} = this.props;
+    let uuidArray = [];
+    unreadNotifications.forEach(notify => {
+      uuidArray.push(notify['uuid'])
+    });
+    if (uuidArray.length === 0) return;
+    dispatch({
+      type: 'users/ackReadNotifications',
+      payload: uuidArray
+    });
+    // this.setState({hasUnreadNotifications: false});
+  };
 
   displaySearchUsersModal = ({key}) => {
     switch (key) {
@@ -29,10 +76,11 @@ class ChatSidebar extends React.Component {
         });
         break;
     }
-
   };
 
   render() {
+    let {hasUnreadNotifications} = this.state;
+    let notificationTabClass = hasUnreadNotifications ? style['tab--unread'] : '';
     let chatItems = [];
     for (let room of this.props.rooms) {
       chatItems.push(
@@ -51,6 +99,13 @@ class ChatSidebar extends React.Component {
         <Menu.Item key="3">3d menu item</Menu.Item>
       </Menu>
     );
+    const notificationItems = [];
+    const {notifications} = this.props;
+    notifications.forEach((notification, idx) => {
+      notificationItems.push(
+        <Notification key={idx} notification={notification} dispatch={this.props.dispatch}/>
+      )
+    });
     return (
       <aside className={style['sidebar']}>
         <div className={style['header']}>
@@ -74,13 +129,20 @@ class ChatSidebar extends React.Component {
           <RoomSearch friendRooms={this.props.friendRooms} multiRooms={this.props.multiRooms}
                       dispatch={this.props.dispatch}/>
         </div>
-        <div className={style["chat-list"]}>
-          <Scrollbars
-            autoHideTimeout={1} autoHide={true} hideTracksWhenNotNeeded={true}
-            renderThumbVertical={props => <div {...props} className={style['thumb-vertical']}/>}>
-            {chatItems}
-          </Scrollbars>
-        </div>
+        <Tabs defaultActiveKey="1" onTabClick={this.ackReadNotifications}>
+          <TabPane tab={<span><Icon type="apple"/>Tab 1</span>} key="1">
+            <div className={style["chat-list"]}>
+              <Scrollbars
+                autoHideTimeout={1} autoHide={true} hideTracksWhenNotNeeded={true}
+                renderThumbVertical={props => <div {...props} className={style['thumb-vertical']}/>}>
+                {chatItems}
+              </Scrollbars>
+            </div>
+          </TabPane>
+          <TabPane tab={<span className={notificationTabClass}><Icon type="android"/>通知</span>} key="2">
+            {notificationItems}
+          </TabPane>
+        </Tabs>
         <SearchModal/>
         <ChatModal/>
       </aside>
@@ -111,12 +173,21 @@ function mapStateToProps({users}) {
   for (let id of users.roomIDs) {
     rooms.push(users.rooms.get(id));
   }
+  let unreadNotifications = [];
+  users.notifications.forEach(notify => {
+    if (!notify['read']) unreadNotifications.push(notify)
+  });
+  let hasUnreadNotifications = unreadNotifications.length > 0;
   return {
     current_user: users.info,
     rooms: rooms,
     friendRooms: selectRooms(rooms, FriendRoom),
-    multiRooms: selectRooms(rooms, MultiRoom)
+    multiRooms: selectRooms(rooms, MultiRoom),
+    notifications: users.notifications,
+    hasUnreadNotifications,
+    unreadNotifications
   }
 }
 
 export default connect(mapStateToProps)(ChatSidebar);
+

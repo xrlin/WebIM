@@ -1,5 +1,7 @@
 import {
+  ackReadNotifications,
   addFriend,
+  applyFriendship,
   createRoom,
   getRecentRooms,
   getUserInfo,
@@ -26,6 +28,7 @@ export default {
     currentRoom: {},
     messages: {},
     newMessages: {},
+    notifications: [],
     roomInputMessages: {},
     friends: [],
     info: {}
@@ -44,6 +47,13 @@ export default {
       return Object.assign({}, state, {...state, rooms: currentRooms, roomIDs})
     },
     addMessage(state, {payload: message}) {
+      const FriendshipMessage = 7;
+      // Add notification
+      if (message.msg_type === FriendshipMessage) {
+        let {notifications} = state;
+        notifications.push(message);
+        return Object.assign({}, state, {...state, notifications: notifications});
+      }
       let {messages, newMessages} = state;
       let room_id = message.room_id;
       if (messages[room_id]) {
@@ -98,12 +108,12 @@ export default {
     }
   },
   effects: {
-    *login({payload: {username, password}}, {call, put}) {
+    * login({payload: {username, password}}, {call, put}) {
       let {data} = yield call(requestToken, username, password);
       sessionStorage.setItem("token", data.token);
       yield put(routerRedux.push({pathname: '/'}));
     },
-    *register({payload: {username, password}}, {call, put}) {
+    * register({payload: {username, password}}, {call, put}) {
       let {data} = yield call(register, username, password);
       yield put(routerRedux.push({pathname: '/login'}));
     },
@@ -170,6 +180,13 @@ export default {
     * updateAvatar({payload: avatarHash}, {call, put}) {
       let {data} = yield call(updateAvatar, avatarHash);
       yield put({type: 'updateInfo', payload: data['user']})
+    },
+    * applyFriendship({payload: userID}, {call, put}) {
+      yield call(applyFriendship, userID);
+      yield put(retrieveOfflineMessages)
+    },
+    * ackReadNotifications({payload: uuidArray}, {call}) {
+      yield call(ackReadNotifications, uuidArray)
     }
   },
   subscriptions: {
@@ -231,3 +248,4 @@ function clearUnreadMessage(unreadMessages, roomID) {
   unreadMessages[roomID] = [];
   return unreadMessages
 }
+

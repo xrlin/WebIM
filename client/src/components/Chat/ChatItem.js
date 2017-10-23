@@ -39,7 +39,7 @@ class RoomAvatar extends React.Component {
           left: idxX + 'px',
           top: idxY + 'px'
         };
-        const img = <img src={getAvatarUrl(imgList[count])} style={cellStyle}/>;
+        const img = <img key={count} src={getAvatarUrl(imgList[count])} style={cellStyle}/>;
         avatars.push(img);
         idxX = idxX + cellPadding + cellWidth;
         count += 1;

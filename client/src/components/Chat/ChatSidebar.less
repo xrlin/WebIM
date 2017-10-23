@@ -88,11 +88,28 @@
   .chat-list {
     border-top: 1px solid #292c33;
     position: relative;
-    height: calc(~"100% - 120px");
+    //height: calc(~"100% - 120px");
+    height: 400px;
   }
 }
 
 .thumb-vertical {
   background-color: #c3c3c3;
   border-radius: 3px;
+}
+
+.tab--unread {
+  position: relative;
+  &:after {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    display: block;
+    content: "";
+    width: 10px;
+    height: 10px;
+    border: 6px;
+    background-color: red;
+    border-radius: 50%;
+  }
 }

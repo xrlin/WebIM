@@ -42,8 +42,8 @@ class UserAvatar extends React.Component {
   addFriend = () => {
     this.setState({addFriendBtnLoading: true});
     this.props.dispatch({
-      type: 'users/addFriend',
-      payload: {friend_id: this.props.user.id}
+      type: 'users/applyFriendship',
+      payload: this.props.user.id
     });
     this.setState({addFriendBtnLoading: false, addFriendBtnDisabled: true});
   };

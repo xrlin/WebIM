@@ -14,8 +14,8 @@ class UserItem extends React.Component {
   clickHandler = () => {
     this.setState({loading: true});
     this.props.dispatch({
-      type: 'users/addFriend',
-      payload: {friend_id: this.props.user.id}
+      type: 'users/applyFriendship',
+      payload: this.props.user.id
     });
     this.setState({loading: false, disabled: true})
   };

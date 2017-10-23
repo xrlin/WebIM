@@ -7,6 +7,7 @@ import (
 	"github.com/xrlin/WebIM/server/models"
 	"golang.org/x/crypto/bcrypt"
 	"log"
+	"github.com/xrlin/WebIM/server/utils"
 )
 
 /* Check if user info is valid with username and password */
@@ -97,4 +98,55 @@ func SearchUsersByName(name string) []*models.User {
 	log.Println("Search users with name ", name)
 	log.Println(users)
 	return users
+}
+
+// An application to ask for a friendship relation with another user
+func AddFriendApplication(hub *Hub, fromUser models.User, toUserID uint) error {
+	uuid, err := utils.GenerateUUID()
+	if err != nil {
+		return err
+	}
+	toUser := models.User{ID: toUserID}
+	err = database.DBConn.First(&toUser).Error
+	if err != nil {
+		return err
+	}
+	msg := models.Message{UUID: uuid, FromUser: fromUser.ID, UserId: toUserID, MsgType: models.FriendshipMessage}
+	log.Printf("Add friend msg %#v", msg)
+	if err = SaveOfflineMessage(msg); err != nil {
+		return err
+	}
+	hub.Messages <- msg.GetDetails()
+	return nil
+}
+
+func PassFriendApplication(hub *Hub, applicationMsgUUID string) (*models.Room, error) {
+	var msg models.Message
+	if err := database.DBConn.Where("uuid = ?", applicationMsgUUID).Find(&msg).Error; err != nil {
+		return nil, err
+	}
+	fromUser := models.User{ID: msg.FromUser}
+	database.DBConn.First(&fromUser)
+	_, room, err := AddFriend(hub, &fromUser, msg.UserId)
+	uuid, _ := utils.GenerateUUID()
+	hub.Messages <- models.Message{MsgType: models.SingleMessage, UUID: uuid, FromUser: msg.UserId, Content: "现在我们是朋友了，可以开始聊天了。", UserId: fromUser.ID, RoomId: room.ID}.GetDetails()
+	err = checkedApplicationMessage(msg)
+	return room, err
+}
+
+func RejectFriendApplication(applicationMsgUUID string) error {
+	var msg models.Message
+	if err := database.DBConn.Where("uuid = ?", applicationMsgUUID).Find(&msg).Error; err != nil {
+		return err
+	}
+	return checkedApplicationMessage(msg)
+}
+
+func SetApplicationRead(applicationMsgUUIDs []string) error {
+	err := database.DBConn.Model(models.Message{}).Where("uuid IN (?)", applicationMsgUUIDs).Updates(map[string]interface{}{"read": true}).Error
+	return err
+}
+
+func checkedApplicationMessage(msg models.Message) error {
+	return database.DBConn.Model(&msg).Updates(map[string]interface{}{"checked": true, "read": true}).Error
 }

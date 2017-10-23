@@ -24,6 +24,9 @@ func RouterEngine() *gin.Engine {
 		api.DELETE("/rooms/:roomID/leave", middlewares.Auth(), controllers.LeaveRoom)
 		api.GET("/messages/unread", middlewares.Auth(), controllers.GetUnreadOfflineMessages)
 		api.DELETE("/messages/ack", middlewares.Auth(), controllers.AckReceive)
+		api.POST("/friendship/apply", middlewares.Auth(), controllers.FriendApplication)
+		api.POST("/friendship/check", middlewares.Auth(), controllers.CheckFriendApplication)
+		api.POST("/notifications/read", middlewares.Auth(), controllers.AckReadFriendApplications)
 
 		// qiniu
 		api.POST("/qiniu/uptoken", middlewares.Auth(), controllers.UploadToken)
