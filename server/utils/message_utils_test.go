@@ -20,7 +20,7 @@ func TestUnMarshalMessage(t *testing.T) {
 	if err != nil {
 		t.Error("UnMarshal failed!")
 	}
-	if msg.RoomId != roomId {
+	if msg.RoomId != uint(roomId) {
 		t.Errorf("Struct unmarshaled incorrect!")
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/xrlin/WebIM/server/database"
 	"github.com/xrlin/WebIM/server/models"
+	"github.com/xrlin/WebIM/server/utils"
 	"log"
 )
 
@@ -85,6 +86,11 @@ func (hub *Hub) leaveRoom(room *models.Room, user *models.User) {
 		return
 	}
 	hub.Rooms[room.RoomName()] = clients
+	uuid, _ := utils.GenerateUUID()
+	var msgContent string
+	msgContent = fmt.Sprintf("用户%v离开了房间", user.Name)
+	msg := models.Message{UUID: uuid, Content: msgContent, MsgType: models.SystemMessage, RoomId: room.ID}
+	hub.Messages <- msg.GetDetails()
 }
 
 // Add new users' clients to room. To prevent redundant messages send to user,
@@ -160,16 +166,41 @@ func (hub *Hub) deliver(messageDetail models.MessageDetail) {
 	fmt.Println(models.SingleMessage)
 	fmt.Println("Rooms", hub.Rooms)
 	hub.deliverMsgToRoom(message.RoomName(), message)
-	//switch message.MsgType {
-	//case models.SingleMessage:
-	//	if message.UserId != 0 {
-	//		fmt.Println("User room name:", message.UserRoomName())
-	//		hub.deliverMsgToRoom(message.UserRoomName(), message)
-	//	}
-	//case models.RoomMessage:
-	//	fmt.Println("Rooms", hub.Rooms)
-	//	hub.deliverMsgToRoom(message.RoomName(), message)
-	//}
+	switch message.MsgType {
+	case models.SingleMessage, models.FriendshipMessage:
+		hub.deliverMsgToUser(message.UserId, message)
+	case models.RoomMessage:
+		fmt.Println("Rooms", hub.Rooms)
+		if message.UserId != 0 {
+			hub.deliverMsgToUser(message.UserId, message)
+			return
+		}
+		hub.deliverMsgToRoom(message.RoomName(), message)
+	}
+}
+
+func (hub *Hub) deliverMsgToUser(userID uint, message models.Message) {
+	client := selectClientByUserID(hub.clients, userID)
+	if client == nil {
+		log.Printf("No client with userID %v now! will save offline message.", userID)
+		log.Printf("Check to save offline message %#v.", message)
+		err := database.DBConn.FirstOrCreate(&message, message).Error
+		if err != nil {
+			log.Fatalf("Check exist and save message %#v failed with error %v", message, err.Error())
+		}
+		return
+	}
+	log.Printf("Will send message to user.Message details: %#v", message.GetDetails())
+	client.send <- message.GetDetails()
+}
+
+func selectClientByUserID(clients []*Client, id uint) *Client {
+	for _, client := range clients {
+		if client.user.ID == id {
+			return client
+		}
+	}
+	return nil
 }
 
 func (hub *Hub) deliverMsgToRoom(room string, message models.Message) {
