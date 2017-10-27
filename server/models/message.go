@@ -16,6 +16,7 @@ const (
 	SingleMusicMessage
 	RoomMusicMessage
 	FriendshipMessage
+	SystemMessage
 )
 
 type Message struct {
