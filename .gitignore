@@ -17,7 +17,7 @@
 .idea/
 
 # ignore config files
-./config/*.json
+*_config.json
 
 # ignore secret config
 /server/config/*
