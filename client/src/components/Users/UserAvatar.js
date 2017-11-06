@@ -6,6 +6,7 @@ import AvatarEditor from 'react-avatar-editor'
 import {uploadImage} from "../../utils/request";
 import {dataURLtoBlob} from "../../utils/common";
 import {getAvatarUrl} from "../../utils/url";
+import enhanceWithClickOutside from "react-click-outside"
 
 class UserAvatar extends React.Component {
   constructor(props) {
@@ -21,8 +22,11 @@ class UserAvatar extends React.Component {
       cropperOpen: false
     };
     this.showModal = this.showModal.bind(this);
-    this.hideModal = this.hideModal.bind(this);
   }
+
+  handleClickOutside = () => {
+    this.setState({modalVisible: false});
+  };
 
   componentWillUpdate(nextProps, nextState) {
     let croppedImg = getAvatarUrl(nextProps.user.avatar);
@@ -46,10 +50,6 @@ class UserAvatar extends React.Component {
       payload: this.props.user.id
     });
     this.setState({addFriendBtnLoading: false, addFriendBtnDisabled: true});
-  };
-
-  hideModal() {
-    this.setState({modalVisible: false})
   };
 
   render() {
@@ -82,8 +82,6 @@ class UserAvatar extends React.Component {
             </div>
           </div>
         </div>
-        <div className={`${styles['mask']} ${this.state.modalVisible ? styles['visible'] : ''}`}
-             onClick={this.hideModal}/>
       </div>
     )
   }
@@ -189,4 +187,4 @@ function mapStateToProps({users}, ownProps) {
   return {isFriend, friends, ...ownProps}
 }
 
-export default connect(mapStateToProps)(UserAvatar);
+export default connect(mapStateToProps)(enhanceWithClickOutside(UserAvatar));
