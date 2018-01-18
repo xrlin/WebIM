@@ -47,7 +47,7 @@ func authByToken(token string, c *gin.Context) {
 		c.Abort()
 		return
 	}
-	user := FindUserByName(tokenInfo.UserName)
+	user := FindUserById(tokenInfo.UserId)
 	if tokenInfo.ExpiresAt-time.Now().Unix() < 900 {
 		// Add new token in header within 30 minutes in response header
 		tokenService.Duration = time.Minute * 30

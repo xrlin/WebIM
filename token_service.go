@@ -7,7 +7,7 @@ import (
 
 type UserClaims struct {
 	UserName string `json:"userName"`
-	UserId   int    `json:"userId"`
+	UserId   uint   `json:"userId"`
 	jwt.StandardClaims
 }
 
@@ -21,7 +21,7 @@ func GetTokenService() TokenService {
 	return TokenService{time.Minute * 30, "test"}
 }
 
-func (ts *TokenService) Generate(userId int, userName string) (string, error) {
+func (ts *TokenService) Generate(userId uint, userName string) (string, error) {
 	expiredAt := time.Now().Add(ts.Duration).Unix()
 	claims := UserClaims{userName,
 		userId,

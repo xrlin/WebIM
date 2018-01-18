@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"testing"
 	"time"
 )
@@ -29,4 +30,39 @@ func TestRegisterUser(t *testing.T) {
 		t.Error(fmt.Sprintf("Register with user %+v failed", u))
 		t.Error(err)
 	}
+}
+
+func getRandomID() uint {
+	return uint(rand.Int31())
+}
+
+func TestCheckFriendship(t *testing.T) {
+	userId1 := getRandomID()
+	userId2 := getRandomID()
+	if CheckFriendship(uint(userId1), uint(userId2)) {
+		t.Fail()
+	}
+	defer func() {
+		db.Exec("DELETE FROM friendship WHERE user_id = ? AND friend_id = ?", userId1, userId2)
+	}()
+	db.Exec("INSERT INTO friendship(user_id, friend_id) VALUES(?, ?)", userId1, userId2)
+	if !CheckFriendship(userId1, userId2) {
+		t.Fail()
+	}
+}
+
+func TestRemoveFriendFromDB(t *testing.T) {
+	userId1 := getRandomID()
+	userId2 := getRandomID()
+	if err := RemoveFriendFromDB(userId1, userId2); err == nil {
+		t.Fail()
+	}
+	defer func() {
+		db.Exec("DELETE FROM friendship WHERE user_id = ? AND friend_id = ?", userId1, userId2)
+	}()
+	db.Exec("INSERT INTO friendship(user_id, friend_id) VALUES(?, ?)", userId1, userId2)
+	if err := RemoveFriendFromDB(userId1, userId2); err != nil {
+		t.Fail()
+	}
+
 }

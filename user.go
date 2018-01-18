@@ -3,22 +3,23 @@ package main
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/gin-gonic/gin/json"
 	"time"
 )
 
 type User struct {
 	ID        uint      `gorm:"primary_key" json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 	// Hash(file name) of avatar in cdn
 	Avatar       string     `json:"avatar"`
 	Name         string     `gorm:"not null;unique_index:idx_name_deleted_at;" json:"name"`
-	DeletedAt    *time.Time `sql:"index" gorm:"unique_index:idx_name_deleted_at" json:"deleted_at"`
+	DeletedAt    *time.Time `sql:"index" gorm:"unique_index:idx_name_deleted_at" json:"-"`
 	Password     string     `gorm:"-" json:"-"`
 	PasswordHash string     `gorm:"not null" json:"-"`
 	// 用于查询离线消息
 	Messages []Message `json:"-"`
+	Friends  []User    `gorm:"many2many:friendship" json:"-"`
 
 	Rooms []Room `gorm:"many2many:user_rooms" json:"-"`
 }
@@ -61,15 +62,32 @@ func FindUserByName(name string) *User {
 	return &user
 }
 
+func FindUserById(id uint) *User {
+	var user User
+	db.Where("id = ?", id).First(&user)
+	// No record found
+	if user.ID == 0 {
+		return nil
+	}
+	return &user
+}
+
 /* Create user from a pointer to user, if successed update the pointer to the User struct with id and other fields form database*/
 func CreateUser(user *User) error {
 	if !db.NewRecord(user) {
 		return errors.New(fmt.Sprintf("User with name %s has exist!", user.Name))
 	}
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
+	passwordHash, err := getPasswordHash(user.Password)
 	if err != nil {
 		return err
 	}
-	user.PasswordHash = string(passwordHash)
+	user.PasswordHash = passwordHash
 	return db.Create(user).Error
+}
+
+func (u User) MarshalJSON() ([]byte, error) {
+	u.Avatar = u.AvatarUrl()
+	type Detail User
+	detail := (Detail)(u)
+	return json.Marshal(detail)
 }

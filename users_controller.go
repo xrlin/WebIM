@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -22,7 +24,7 @@ func UserToken(c *gin.Context) {
 		user := userObj.(*User)
 		// TODO config SignedKey
 		tokenService := GetTokenService()
-		token, err := tokenService.Generate(int(user.ID), user.Name)
+		token, err := tokenService.Generate(user.ID, user.Name)
 		if err == nil {
 			c.JSON(http.StatusOK, gin.H{"token": token})
 		} else {
@@ -53,7 +55,7 @@ type avatarInfo struct {
 
 type UserDetail struct {
 	User
-	AvatarUrl string `json:"avatar_url"`
+	AvatarUrl string `json:"avatarURL"`
 }
 
 func UpdateAvatar(c *gin.Context) {
@@ -78,14 +80,14 @@ func UpdateAvatar(c *gin.Context) {
 func GetUserInfo(c *gin.Context) {
 	userObj, ok := c.Get("user")
 	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{"errors": "No such user!"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "No such user!"})
 		return
 	}
 	user := userObj.(*User)
 	c.JSON(http.StatusOK, user)
 }
 
-func GetRecentRooms(c *gin.Context) {
+func GetUserRoomsController(c *gin.Context) {
 	userObj, ok := c.Get("user")
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{"errors": "No such user!"})
@@ -107,62 +109,46 @@ func SearchUsers(c *gin.Context) {
 }
 
 type friendInfo struct {
-	FriendID uint `json:"friend_id" binding:"required"`
+	FriendID uint `json:"friendID" binding:"required"`
 }
 
 func AddFriend(c *gin.Context) {
-	userObj, ok := c.Get("user")
-	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{"errors": "No such user!"})
-		return
-	}
-	user := userObj.(*User)
-	friend := friendInfo{}
-	if err := c.BindJSON(&friend); err != nil || friend.FriendID == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": "Must provide the user id of friend."})
-		return
-	}
-	_, room, err := AddFriendService(hub, user, friend.FriendID)
+	user, _ := c.Get("user")
+	param := friendInfo{}
+	c.BindJSON(&param)
+	friend, err := AddFriendService(hub, user.(*User), param.FriendID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Add friend failed." + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Add friend failed." + err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"room": *room})
+	c.JSON(http.StatusOK, gin.H{"friend": friend})
+}
+
+func DeleteFriend(c *gin.Context) {
+	user, _ := c.Get("user")
+	friendID, _ := strconv.ParseUint(c.Param("friendID"), 10, 64)
+	if err := RemoveFriend(hub, *user.(*User), uint(friendID)); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.AbortWithStatusJSON(http.StatusOK, gin.H{})
 }
 
 func GetFriends(c *gin.Context) {
-	userObj, ok := c.Get("user")
-	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{"errors": "No such user!"})
-		return
-	}
-	user := userObj.(*User)
-	friends := GetUserFriends(*user)
+	user, _ := c.Get("user")
+	friends := GetUserFriends(*user.(*User))
 	c.JSON(http.StatusOK, gin.H{"friends": friends})
 }
 
-type addRoomParams struct {
-	UserIds []int `json:"user_ids" binding:"required"`
-}
-
-func CreateRoom(c *gin.Context) {
+func GetRooms(c *gin.Context) {
 	userObj, ok := c.Get("user")
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{"errors": "No such user!"})
 		return
 	}
-	var params addRoomParams
-	if err := c.BindJSON(&params); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
-		return
-	}
 	user := userObj.(*User)
-	if room, err := CreateRoomService(hub, user, params.UserIds); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
-		return
-	} else {
-		c.JSON(http.StatusCreated, gin.H{"room": *room})
-	}
+	rooms := GetUserRooms(*user)
+	c.JSON(http.StatusOK, gin.H{"rooms": rooms})
 }
 
 func FriendApplication(c *gin.Context) {
@@ -202,12 +188,12 @@ func CheckFriendApplication(c *gin.Context) {
 		return
 	}
 	if reqParams.Action == "pass" {
-		room, err := PassFriendApplication(hub, reqParams.UUID)
+		err := PassFriendApplication(hub, reqParams.UUID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusCreated, gin.H{"room": *room})
+		c.AbortWithStatus(http.StatusCreated)
 		return
 	} else {
 		err := RejectFriendApplication(reqParams.UUID)
@@ -237,6 +223,53 @@ func AckReadFriendApplications(c *gin.Context) {
 	c.AbortWithStatus(http.StatusOK)
 }
 
+type Profile struct {
+	Name string
+}
+
+func UpdateProfile(c *gin.Context) {
+	userObj, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"errors": "Authorize failed!"})
+		return
+	}
+	user := userObj.(*User)
+	var profile Profile
+	if c.ShouldBind(&profile) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Params invalid"})
+		return
+	}
+	if UpdateProfileService(user, profile) != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Update failed"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"messsage": "Update Successfully"})
+}
+
+type passwordParams struct {
+	OldPassword string `binding:"required" json:"oldPassword"`
+	NewPassword string `binding:"required" json:"newPassword"`
+}
+
+func UpdatePassword(c *gin.Context) {
+	userObj, ok := c.Get("user")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"errors": "Authorize failed!"})
+		return
+	}
+	user := userObj.(*User)
+	var params passwordParams
+	if err := c.ShouldBind(&params); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := UpdatePasswordService(user, params.OldPassword, params.NewPassword); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Update password success."})
+}
+
 // Get token from Authorization header
 // Token in header is in format:
 //		Authorization: Bearer yJhbGciOiJIUzI1NiIsInR5...JIUz
@@ -262,4 +295,12 @@ func checkRequiredParams(c *gin.Context, requiredParams []string) ([]string, []s
 		}
 	}
 	return results, absentParams, len(absentParams) == 0
+}
+
+func getPasswordHash(password string) (string, error) {
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+	if err != nil {
+		return "", err
+	}
+	return string(passwordHash), nil
 }
