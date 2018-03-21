@@ -35,6 +35,9 @@ type Message struct {
 	Content  string `gorm:"not null" json:"content"`
 	Checked  bool   `sql:"DEFAULT:false" json:"checked"`
 	Read     bool   `sql:"DEFAULT:false" json:"read"`
+	Topic    string `json:"topic"`
+	From     uint   `json:"from"`
+	Payload  string `json:"payload"`
 }
 
 type MessageDetail struct {

@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"github.com/gin-gonic/gin/json"
 	"log"
+	"qiniupkg.com/x/errors.v7"
 )
 
 const MessageList string = "messages"
@@ -11,6 +13,44 @@ const PopTimeout int = 3
 
 func closeConn(conn redis.Conn) {
 	conn.Close()
+}
+
+func DeliverMessage(msg Message, topic string, user *User) error {
+	if err := checkMessage(msg, topic, user); err != nil {
+		return err
+	}
+	client, err := GetMQTTClient()
+	if err != nil {
+		return err
+	}
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	log.Printf("connect status %s", client.IsConnected())
+	log.Printf("payload %#v\n", payload)
+	token := client.Publish(topic, 1, false, payload)
+	//token := client.Subscribe(topic, byte(0), nil )
+	token.Wait()
+	log.Printf("connect %s", client.IsConnected())
+	log.Printf("connect %s", token.Error())
+	client.Disconnect(250)
+	return token.Error()
+}
+
+func checkMessage(msg Message, topic string, user *User) error {
+	if msg.From != user.ID {
+		return errors.New("forbidden")
+	}
+	if !hasPrivilegeToSend(topic, user) {
+		return errors.New("forbidden")
+	}
+	return nil
+}
+
+// TODO
+func hasPrivilegeToSend(topic string, user *User) bool {
+	return true
 }
 
 func PushMessage(msg Message) error {

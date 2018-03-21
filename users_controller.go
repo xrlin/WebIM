@@ -78,12 +78,19 @@ func UpdateAvatar(c *gin.Context) {
 }
 
 func GetUserInfo(c *gin.Context) {
-	userObj, ok := c.Get("user")
-	if !ok {
+	userID := c.Query("id")
+	var user User
+	var err error
+	if userID != "" {
+		err = db.Where("id = ?", userID).First(&user).Error
+	} else {
+		userObj, _ := c.Get("user")
+		user = *userObj.(*User)
+	}
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "No such user!"})
 		return
 	}
-	user := userObj.(*User)
 	c.JSON(http.StatusOK, user)
 }
 

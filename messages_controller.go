@@ -46,3 +46,16 @@ func AckReceive(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"result": "Successfully ack to server"})
 	}
 }
+
+func Push(c *gin.Context) {
+	obj, _ := c.Get("user")
+	var msg Message
+	c.BindJSON(&msg)
+	user := obj.(*User)
+
+	if err := DeliverMessage(msg, msg.Topic, user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.AbortWithStatus(http.StatusOK)
+}

@@ -33,6 +33,8 @@ func RouterEngine() *gin.Engine {
 		api.GET("/room/:roomID", Auth(), GetRoomInfo)
 		api.PUT("/room/:roomID", Auth(), UpdateRoom)
 
+		api.POST("/message/push", Auth(), Push)
+
 		api.PUT("/user/profile", Auth(), UpdateProfile)
 
 		// qiniu
