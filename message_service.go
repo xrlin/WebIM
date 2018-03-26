@@ -27,18 +27,16 @@ func DeliverMessage(msg Message, topic string, user *User) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("connect status %s", client.IsConnected())
-	log.Printf("payload %#v\n", payload)
-	token := client.Publish(topic, 1, false, payload)
+	token := client.Publish("IMS/P2P/82", 1, false, payload)
 	//token := client.Subscribe(topic, byte(0), nil )
 	token.Wait()
-	log.Printf("connect %s", client.IsConnected())
-	log.Printf("connect %s", token.Error())
-	client.Disconnect(250)
 	return token.Error()
 }
 
 func checkMessage(msg Message, topic string, user *User) error {
+	if topic == "" {
+		return errors.New("topic cannot be blank")
+	}
 	if msg.From != user.ID {
 		return errors.New("forbidden")
 	}

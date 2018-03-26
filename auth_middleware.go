@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -12,10 +11,8 @@ import (
 func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if token := getToken(c); token != "" {
-			log.Print("Will go to authByToken")
 			authByToken(token, c)
 		} else {
-			log.Print("Will go to authByUsername")
 			authByUsernameAndPassword(c)
 		}
 	}

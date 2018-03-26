@@ -20,7 +20,6 @@ func GetMQTTClient() (client MQTT.Client, err error) {
 			return
 		}
 	}
-	log.Printf("GetMQTTClient result %#v\noptions: %#v", MQTTClient, *options)
 	client = MQTTClient
 	return
 }

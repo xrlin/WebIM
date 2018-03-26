@@ -31,13 +31,13 @@ type Message struct {
 	User   User `json:"-"`
 	// Id of the user that sends the message
 	FromUser uint   `gorm:"not null;index" json:"from_user"`
-	MsgType  int    `gorm:"not null" json:"msg_type" binding:"required"`
+	MsgType  int    `gorm:"not null" json:"msg_type"`
 	Content  string `gorm:"not null" json:"content"`
 	Checked  bool   `sql:"DEFAULT:false" json:"checked"`
 	Read     bool   `sql:"DEFAULT:false" json:"read"`
-	Topic    string `json:"topic"`
-	From     uint   `json:"from"`
-	Payload  string `json:"payload"`
+	Topic    string `json:"topic" binding:"required"`
+	From     uint   `json:"from" binding:"required"`
+	Payload  string `json:"payload" binding:"required"`
 }
 
 type MessageDetail struct {
