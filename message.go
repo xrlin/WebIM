@@ -37,6 +37,7 @@ type Message struct {
 	Read     bool   `sql:"DEFAULT:false" json:"read"`
 	Topic    string `json:"topic" binding:"required"`
 	From     uint   `json:"from" binding:"required"`
+	To       uint   `json:"to"`
 	Payload  string `json:"payload" binding:"required"`
 }
 

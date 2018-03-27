@@ -1,11 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jinzhu/gorm/dialects/postgres"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"reflect"
+	"strconv"
 )
 
 /* Check if user info is valid with username and password */
@@ -58,12 +61,11 @@ func GetUserRecentRooms(user *User) []room {
 	return result
 }
 
-// TODO add new friend to caller's hub
-func AddFriendService(hub *Hub, caller *User, friendID uint) (User, error) {
+func AddFriendService(caller *User, friendID uint) (User, error) {
 	friend := User{}
-	if caller.ID == friendID {
-		return friend, errors.New("cannot add friend of yourself")
-	}
+	//if caller.ID == friendID {
+	//	return friend, errors.New("cannot add friend of yourself")
+	//}
 	for CheckFriendship(caller.ID, friendID) {
 		return friend, errors.New("already has friendship")
 	}
@@ -135,7 +137,7 @@ func SearchUsersByName(name string) []*User {
 }
 
 // An application to ask for a friendship relation with another user
-func AddFriendApplication(hub *Hub, fromUser User, toUserID uint) error {
+func AddFriendApplication(fromUser User, toUserID uint, extraMessage string) error {
 	uuid, err := GenerateUUID()
 	if err != nil {
 		return err
@@ -145,35 +147,71 @@ func AddFriendApplication(hub *Hub, fromUser User, toUserID uint) error {
 	if err != nil {
 		return err
 	}
-	msg := Message{UUID: uuid, FromUser: fromUser.ID, UserId: toUserID, MsgType: FriendshipMessage}
+	msg := Message{UUID: uuid, From: fromUser.ID, To: toUserID, MsgType: FriendshipMessage, Payload: extraMessage}
 	log.Printf("Add friend msg %#v", msg)
-	if err = SaveOfflineMessage(msg); err != nil {
+	if err = SaveInboxMessage(msg); err != nil {
 		return err
 	}
-	hub.Messages <- msg.GetDetails()
 	return nil
 }
 
-func PassFriendApplication(hub *Hub, applicationMsgUUID string) error {
-	var msg Message
-	if err := db.Where("uuid = ?", applicationMsgUUID).Find(&msg).Error; err != nil {
+func SaveInboxMessage(message Message) error {
+	var rawMsg []byte
+	rawMsg, err := json.Marshal(message)
+	if err != nil {
 		return err
 	}
-	fromUser := User{ID: msg.FromUser}
-	db.First(&fromUser)
-	_, err := AddFriendService(hub, &fromUser, msg.UserId)
-	uuid, _ := GenerateUUID()
-	hub.Messages <- Message{MsgType: SingleMessage, UUID: uuid, FromUser: msg.UserId, Content: "现在我们是朋友了，可以开始聊天了。", UserId: fromUser.ID}.GetDetails()
+	inboxMsg := Inbox{Message: postgres.Jsonb{RawMessage: rawMsg}}
+	return db.Create(inboxMsg).Error
+}
+
+func PassFriendApplication(user *User, applicationMsgUUID string) error {
+	msg, err := retrieveMessageWithUUID(applicationMsgUUID)
+	if user.ID != msg.To {
+		return errors.New("you have no right to accept the application")
+	}
 	err = checkedApplicationMessage(msg)
+	if err != nil {
+		return err
+	}
+	_, err = AddFriendService(user, msg.To)
+	if err != nil {
+		return err
+	}
+	welcomeMessage := WelcomeMessage(user.ID, msg.From)
+	DeliverMessage(*welcomeMessage, welcomeMessage.Topic, user)
 	return err
 }
 
+// 添加好友后的欢迎语
+func WelcomeMessage(from uint, to uint) *Message {
+	topic := "IMS/P2P/" + strconv.Itoa(int(to)) + "/" + strconv.Itoa(int(from))
+	message := Message{From: from, To: to, Topic: topic, MsgType: SingleMessage}
+	return &message
+}
+
+func retrieveMessageWithUUID(uuid string) (Message, error) {
+	inbox := Inbox{}
+	var message Message
+	err := db.Exec(`select message from inboxex where message::jsonb @> {"uuid": %s}::jsonb`, uuid).First(&inbox).Error
+	if err != nil {
+		return message, err
+	}
+	err = json.Unmarshal(inbox.Message.RawMessage, &message)
+	return message, err
+}
+
 func RejectFriendApplication(applicationMsgUUID string) error {
-	var msg Message
-	if err := db.Where("uuid = ?", applicationMsgUUID).Find(&msg).Error; err != nil {
+	msg, err := retrieveMessageWithUUID(applicationMsgUUID)
+	if err != nil {
 		return err
 	}
-	return checkedApplicationMessage(msg)
+	if err := checkedApplicationMessage(msg); err != nil {
+		return err
+	}
+	rejectMessage := &Message{From: msg.To, Payload: "好友申请被拒绝"}
+	DeliverMessageToInbox(msg.From, rejectMessage)
+	return nil
 }
 
 func SetApplicationRead(applicationMsgUUIDs []string) error {

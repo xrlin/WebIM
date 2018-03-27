@@ -123,7 +123,7 @@ func AddFriend(c *gin.Context) {
 	user, _ := c.Get("user")
 	param := friendInfo{}
 	c.BindJSON(&param)
-	friend, err := AddFriendService(hub, user.(*User), param.FriendID)
+	friend, err := AddFriendService(user.(*User), param.FriendID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Add friend failed." + err.Error()})
 		return
@@ -172,7 +172,7 @@ func FriendApplication(c *gin.Context) {
 		return
 	}
 	user := userObj.(*User)
-	err := AddFriendApplication(hub, *user, params.UserID)
+	err := AddFriendApplication(*user, params.UserID, "")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -181,7 +181,7 @@ func FriendApplication(c *gin.Context) {
 }
 
 func CheckFriendApplication(c *gin.Context) {
-	_, ok := c.Get("user")
+	obj, ok := c.Get("user")
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{"errors": "No such user!"})
 		return
@@ -195,7 +195,7 @@ func CheckFriendApplication(c *gin.Context) {
 		return
 	}
 	if reqParams.Action == "pass" {
-		err := PassFriendApplication(hub, reqParams.UUID)
+		err := PassFriendApplication(obj.(*User), reqParams.UUID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

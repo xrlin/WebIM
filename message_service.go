@@ -33,6 +33,10 @@ func DeliverMessage(msg Message, topic string, user *User) error {
 	return token.Error()
 }
 
+func DeliverMessageToInbox(receiver uint, message *Message) {
+
+}
+
 func checkMessage(msg Message, topic string, user *User) error {
 	if topic == "" {
 		return errors.New("topic cannot be blank")
